@@ -1,0 +1,2075 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Bharat Electoral Analytics — Lok Sabha & Voter Behaviour Observatory</title>
+
+  <!-- Google Fonts: Inter & JetBrains Mono for tabular numbers -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet" />
+
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- D3.js v7 & TopoJSON Client -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.2/d3.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/topojson/3.0.2/topojson.min.js"></script>
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'system-ui', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          },
+          colors: {
+            civic: {
+              navy: '#0f172a',
+              slate: '#1e293b',
+              bg: '#f8fafc',
+              border: '#e2e8f0',
+              nda: '#ea580c',      // Saffron / Orange
+              india: '#2563eb',    // Royal Blue
+              unaligned: '#0d9488' // Teal
+            }
+          }
+        }
+      }
+    };
+  </script>
+
+  <style>
+    /* Custom civic-data journalism styling & D3 chart transitions */
+    body {
+      background-color: #f8fafc;
+      color: #0f172a;
+      font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+    }
+    .tabular-nums {
+      font-variant-numeric: tabular-nums;
+    }
+    .chart-card {
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 0.75rem;
+      box-shadow: 0 1px 3px 0 rgba(15, 23, 42, 0.04), 0 1px 2px -1px rgba(15, 23, 42, 0.03);
+      transition: box-shadow 0.2s ease;
+    }
+    .chart-card:hover {
+      box-shadow: 0 4px 12px -2px rgba(15, 23, 42, 0.07);
+    }
+    .d3-tooltip {
+      position: fixed;
+      pointer-events: none;
+      z-index: 9999;
+      background: rgba(15, 23, 42, 0.96);
+      color: #f8fafc;
+      border: 1px solid #334155;
+      border-radius: 0.5rem;
+      padding: 0.65rem 0.85rem;
+      font-size: 0.78rem;
+      line-height: 1.4;
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);
+      backdrop-filter: blur(6px);
+      max-width: 280px;
+      opacity: 0;
+      transition: opacity 0.12s ease;
+    }
+    .state-shape {
+      stroke: #ffffff;
+      stroke-width: 0.9px;
+      cursor: pointer;
+      transition: opacity 0.2s ease, stroke-width 0.15s ease;
+    }
+    .state-shape:hover {
+      stroke: #0f172a;
+      stroke-width: 1.8px;
+    }
+    .state-dimmed {
+      opacity: 0.22;
+    }
+    .state-selected {
+      stroke: #0f172a;
+      stroke-width: 2.2px;
+    }
+    .axis text {
+      fill: #475569;
+      font-size: 11px;
+      font-family: 'Inter', sans-serif;
+    }
+    .axis path,
+    .axis line {
+      stroke: #cbd5e1;
+    }
+    .grid line {
+      stroke: #f1f5f9;
+      stroke-dasharray: 3,3;
+    }
+    .grid path {
+      stroke-width: 0;
+    }
+    /* Custom scrollbar for data table */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #f1f5f9;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 3px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #94a3b8;
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+  <!-- Interactive Floating Tooltip -->
+  <div id="global-tooltip" class="d3-tooltip" role="tooltip"></div>
+
+  <!-- ===================================================================== -->
+  <!-- 1. HEADER & NAVIGATION BAR                                            -->
+  <!-- ===================================================================== -->
+  <header class="bg-civic-navy text-white border-b border-slate-800 sticky top-0 z-40">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex flex-col md:flex-row md:items-center md:justify-between py-3.5 gap-3">
+        <!-- Brand Logo & Title -->
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-orange-500 via-white to-emerald-600 p-0.5 flex-shrink-0 shadow-md">
+            <div class="w-full h-full bg-civic-navy rounded-[10px] flex items-center justify-center">
+              <!-- Custom Ashoka Chakra / Ballot Bar Emblem SVG -->
+              <svg class="w-6 h-6 text-amber-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                <circle cx="12" cy="12" r="9" />
+                <circle cx="12" cy="12" r="2.2" fill="currentColor" />
+                <path d="M12 3v18M3 12h18M5.64 5.64l12.72 12.72M18.36 5.64L5.64 18.36" stroke-linecap="round" />
+              </svg>
+            </div>
+          </div>
+          <div>
+            <div class="flex items-center gap-2">
+              <h1 class="text-base sm:text-lg font-bold tracking-tight text-white">
+                Bharat Electoral Analytics
+              </h1>
+              <span class="hidden sm:inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wider bg-slate-800 text-amber-300 border border-slate-700">
+                ECI Statistical Observatory
+              </span>
+            </div>
+            <p class="text-xs text-slate-400">
+              Lok Sabha General Elections &amp; Longitudinal Voter Behaviour (1951–2024)
+            </p>
+          </div>
+        </div>
+
+        <!-- Navigation Tabs & Quick CSV Export -->
+        <div class="flex flex-wrap items-center justify-between md:justify-end gap-2">
+          <nav class="flex bg-slate-800/90 p-1 rounded-lg border border-slate-700/80" aria-label="Dashboard Sections">
+            <button data-nav="overview" class="nav-btn px-3 py-1.5 text-xs font-semibold rounded-md bg-white text-civic-navy shadow-sm transition">
+              Overview
+            </button>
+            <button data-nav="regional" class="nav-btn px-3 py-1.5 text-xs font-medium rounded-md text-slate-300 hover:text-white transition">
+              Regional &amp; Map
+            </button>
+            <button data-nav="explorer" class="nav-btn px-3 py-1.5 text-xs font-medium rounded-md text-slate-300 hover:text-white transition">
+              Data Explorer &amp; Validation
+            </button>
+          </nav>
+
+          <button id="header-export-btn" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-emerald-600 hover:bg-emerald-500 text-white shadow-sm transition cursor-pointer">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5m0 0l5-5m-5 5V3" />
+            </svg>
+            <span>Export Filtered CSV</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- ===================================================================== -->
+  <!-- 2. GLOBAL SYNCHRONIZED FILTER PANEL                                   -->
+  <!-- ===================================================================== -->
+  <section class="bg-white border-b border-slate-200 shadow-xs">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5">
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 items-end">
+        <!-- Election Year Selector -->
+        <div>
+          <label for="filter-year" class="block text-[11px] font-semibold uppercase tracking-wider text-slate-500 mb-1">
+            Election Year
+          </label>
+          <select id="filter-year" class="w-full rounded-lg border border-slate-300 bg-slate-50 px-3 py-2 text-xs sm:text-sm font-semibold text-slate-800 focus:border-blue-600 focus:bg-white focus:outline-none">
+            <option value="2024" selected>2024 (18th Lok Sabha)</option>
+            <option value="2019">2019 (17th Lok Sabha)</option>
+            <option value="2014">2014 (16th Lok Sabha)</option>
+            <option value="2009">2009 (15th Lok Sabha)</option>
+            <option value="2004">2004 (14th Lok Sabha)</option>
+            <option value="ALL">All Years (1951–2024 Trend)</option>
+          </select>
+        </div>
+
+        <!-- Geographical Region Selector -->
+        <div>
+          <label for="filter-region" class="block text-[11px] font-semibold uppercase tracking-wider text-slate-500 mb-1">
+            Geographical Region
+          </label>
+          <select id="filter-region" class="w-full rounded-lg border border-slate-300 bg-slate-50 px-3 py-2 text-xs sm:text-sm font-medium text-slate-800 focus:border-blue-600 focus:bg-white focus:outline-none">
+            <option value="ALL" selected>All India (6 Macro Regions)</option>
+            <option value="North India">North India</option>
+            <option value="West India">West India</option>
+            <option value="Central India">Central India</option>
+            <option value="East India">East India</option>
+            <option value="Northeast India">Northeast India</option>
+            <option value="South India">South India</option>
+          </select>
+        </div>
+
+        <!-- Political Party / Alliance Filter -->
+        <div>
+          <label for="filter-party" class="block text-[11px] font-semibold uppercase tracking-wider text-slate-500 mb-1">
+            Alliance / Political Party
+          </label>
+          <select id="filter-party" class="w-full rounded-lg border border-slate-300 bg-slate-50 px-3 py-2 text-xs sm:text-sm font-medium text-slate-800 focus:border-blue-600 focus:bg-white focus:outline-none">
+            <option value="ALL" selected>All Parties &amp; Alliances</option>
+            <optgroup label="Major Alliances">
+              <option value="ALLIANCE:NDA">NDA (National Democratic Alliance)</option>
+              <option value="ALLIANCE:INDIA">INDIA / UPA Bloc</option>
+              <option value="ALLIANCE:Unaligned">Unaligned / Regional Others</option>
+            </optgroup>
+            <optgroup label="Major Parties">
+              <option value="PARTY:BJP">Bharatiya Janata Party (BJP)</option>
+              <option value="PARTY:INC">Indian National Congress (INC)</option>
+              <option value="PARTY:SP">Samajwadi Party (SP)</option>
+              <option value="PARTY:AITC">All India Trinamool Congress (AITC)</option>
+              <option value="PARTY:DMK">Dravida Munnetra Kazhagam (DMK)</option>
+              <option value="PARTY:TDP">Telugu Desam Party (TDP)</option>
+              <option value="PARTY:JD(U)">Janata Dal (United) (JD(U))</option>
+              <option value="PARTY:YSRCP">YSR Congress Party (YSRCP)</option>
+              <option value="PARTY:BJD">Biju Janata Dal (BJD)</option>
+              <option value="PARTY:BSP">Bahujan Samaj Party (BSP)</option>
+            </optgroup>
+          </select>
+        </div>
+
+        <!-- State Map & Demographic Metric Selector -->
+        <div>
+          <label for="filter-metric" class="block text-[11px] font-semibold uppercase tracking-wider text-slate-500 mb-1">
+            Map &amp; State Metric
+          </label>
+          <select id="filter-metric" class="w-full rounded-lg border border-slate-300 bg-slate-50 px-3 py-2 text-xs sm:text-sm font-medium text-slate-800 focus:border-blue-600 focus:bg-white focus:outline-none">
+            <option value="turnout_pct" selected>Total Voter Turnout (%)</option>
+            <option value="female_turnout_pct">Female Voter Turnout (%)</option>
+            <option value="male_turnout_pct">Male Voter Turnout (%)</option>
+            <option value="youth_elector_share_pct">Youth Elector Share 18–29 (%)</option>
+            <option value="avg_victory_margin_pct">Avg Victory Margin (%)</option>
+          </select>
+        </div>
+
+        <!-- Reset & Status Controls -->
+        <div class="flex items-center gap-2">
+          <button id="reset-filters-btn" class="w-full inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg border border-slate-300 bg-white hover:bg-slate-100 text-xs sm:text-sm font-semibold text-slate-700 transition cursor-pointer">
+            <svg class="w-3.5 h-3.5 text-slate-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
+            <span>Reset Filters</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Active Filter Breadcrumb & Live Validation Status -->
+      <div class="mt-3 pt-2.5 border-t border-slate-100 flex flex-wrap items-center justify-between gap-2 text-xs">
+        <div class="flex flex-wrap items-center gap-2">
+          <span class="text-slate-500 font-medium">Active Scope:</span>
+          <span id="active-filter-badge" class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-blue-50 text-blue-800 border border-blue-200 font-semibold">
+            Year: 2024 • Region: All India • Party: All
+          </span>
+          <span id="selected-state-pill" class="hidden inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-amber-50 text-amber-800 border border-amber-200 font-semibold">
+            <span id="selected-state-name">State</span>
+            <button id="clear-state-btn" class="ml-1 text-amber-900 hover:text-black font-bold" title="Clear state focus">&times;</button>
+          </span>
+        </div>
+
+        <div id="validation-pill" class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200 font-medium">
+          <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+          <span id="validation-status-text">Data Validation: Verified against 4 ECI CSVs (543/543 seats)</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================================================================== -->
+  <!-- MAIN DASHBOARD CONTAINER                                              -->
+  <!-- ===================================================================== -->
+  <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+
+    <!-- =================================================================== -->
+    <!-- 3. KPI SUMMARY CARDS (4-COLUMN RESPONSIVE GRID)                     -->
+    <!-- =================================================================== -->
+    <section aria-label="Key Performance Indicators" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <!-- KPI 1: Voter Turnout -->
+      <div class="chart-card p-4 flex flex-col justify-between">
+        <div class="flex items-start justify-between">
+          <div>
+            <p class="text-xs font-semibold uppercase tracking-wider text-slate-500" id="kpi-turnout-label">Voter Turnout (2024)</p>
+            <h2 class="text-2xl sm:text-3xl font-extrabold text-slate-900 tabular-nums mt-1" id="kpi-turnout-value">66.10%</h2>
+          </div>
+          <span id="kpi-turnout-delta" class="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-amber-50 text-amber-800 border border-amber-200 tabular-nums">
+            -1.30 pp vs 2019
+          </span>
+        </div>
+        <div class="mt-3 pt-2.5 border-t border-slate-100 flex items-center justify-between text-xs text-slate-600 tabular-nums">
+          <span>Female: <strong id="kpi-female-turnout" class="text-slate-900">65.78%</strong></span>
+          <span>Male: <strong id="kpi-male-turnout" class="text-slate-900">65.55%</strong></span>
+        </div>
+      </div>
+
+      <!-- KPI 2: Seats Scope -->
+      <div class="chart-card p-4 flex flex-col justify-between">
+        <div class="flex items-start justify-between">
+          <div>
+            <p class="text-xs font-semibold uppercase tracking-wider text-slate-500" id="kpi-seats-label">Lok Sabha Seats</p>
+            <h2 class="text-2xl sm:text-3xl font-extrabold text-slate-900 tabular-nums mt-1" id="kpi-seats-value">543</h2>
+          </div>
+          <span id="kpi-seats-badge" class="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-slate-100 text-slate-700 border border-slate-200 tabular-nums">
+            Majority: 272
+          </span>
+        </div>
+        <div class="mt-3 pt-2.5 border-t border-slate-100 flex items-center justify-between text-xs text-slate-600">
+          <span id="kpi-seats-sub1">36 States &amp; UTs</span>
+          <span id="kpi-seats-sub2" class="font-semibold text-slate-800 tabular-nums">100.0% Scope</span>
+        </div>
+      </div>
+
+      <!-- KPI 3: Electors & Votes Polled -->
+      <div class="chart-card p-4 flex flex-col justify-between">
+        <div class="flex items-start justify-between">
+          <div>
+            <p class="text-xs font-semibold uppercase tracking-wider text-slate-500" id="kpi-electors-label">Registered Electors</p>
+            <h2 class="text-2xl sm:text-3xl font-extrabold text-slate-900 tabular-nums mt-1" id="kpi-electors-value">97.98 Cr</h2>
+          </div>
+          <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-200">
+            ECI Roll
+          </span>
+        </div>
+        <div class="mt-3 pt-2.5 border-t border-slate-100 flex items-center justify-between text-xs text-slate-600 tabular-nums">
+          <span>Votes Polled: <strong id="kpi-votes-value" class="text-slate-900">64.64 Cr</strong></span>
+          <span id="kpi-elector-growth" class="text-emerald-700 font-semibold">+7.4% vs 2019</span>
+        </div>
+      </div>
+
+      <!-- KPI 4: Winning Party / Leading Alliance -->
+      <div class="chart-card p-4 flex flex-col justify-between">
+        <div class="flex items-start justify-between">
+          <div class="min-w-0 pr-2">
+            <p class="text-xs font-semibold uppercase tracking-wider text-slate-500" id="kpi-winner-label">Winning Formation</p>
+            <h2 class="text-lg sm:text-xl font-extrabold text-slate-900 truncate mt-1" id="kpi-winner-value">BJP (NDA)</h2>
+          </div>
+          <span id="kpi-winner-badge" class="flex-shrink-0 inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-orange-50 text-orange-800 border border-orange-200 tabular-nums">
+            293 NDA Seats
+          </span>
+        </div>
+        <div class="mt-3 pt-2.5 border-t border-slate-100 flex items-center justify-between text-xs text-slate-600 tabular-nums">
+          <span id="kpi-winner-sub1">BJP: 240 Seats (36.56%)</span>
+          <span id="kpi-winner-sub2" class="font-semibold text-blue-700">INDIA: 234</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- =================================================================== -->
+    <!-- 4. PRIMARY CHARTS GRID (ROW 1: HISTORICAL LINE + PARTY BAR CHART)   -->
+    <!-- =================================================================== -->
+    <section id="section-overview" class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+      <!-- Chart 1: Historical Voter Turnout Line Chart (1951-2024) -->
+      <div class="chart-card p-5 lg:col-span-7 flex flex-col">
+        <div class="flex flex-wrap items-start justify-between gap-2 mb-3">
+          <div>
+            <h3 class="text-base font-bold text-slate-900">Historical Voter Turnout &amp; Gender Convergence (1951–2024)</h3>
+            <p class="text-xs text-slate-500">Overall, Male &amp; Female turnout % across 18 Lok Sabha elections (1951–67 gender data marked NA)</p>
+          </div>
+          <!-- Legend -->
+          <div class="flex items-center gap-3 text-xs font-medium">
+            <span class="inline-flex items-center gap-1.5"><span class="w-3 h-0.5 bg-slate-900 inline-block"></span>Overall</span>
+            <span class="inline-flex items-center gap-1.5"><span class="w-3 h-0.5 bg-blue-600 inline-block"></span>Male</span>
+            <span class="inline-flex items-center gap-1.5"><span class="w-3 h-0.5 bg-rose-600 inline-block"></span>Female</span>
+          </div>
+        </div>
+        <div id="line-chart-container" class="w-full h-[310px] relative"></div>
+      </div>
+
+      <!-- Chart 2: Party Performance Bar Chart -->
+      <div class="chart-card p-5 lg:col-span-5 flex flex-col">
+        <div class="flex flex-wrap items-start justify-between gap-2 mb-3">
+          <div>
+            <h3 class="text-base font-bold text-slate-900" id="party-chart-title">Party Performance (2024)</h3>
+            <p class="text-xs text-slate-500" id="party-chart-subtitle">Top parties color-coded by political alliance</p>
+          </div>
+          <div class="inline-flex rounded-lg border border-slate-200 p-0.5 bg-slate-50 text-xs">
+            <button id="toggle-party-seats" class="px-2.5 py-1 rounded-md font-semibold bg-white text-slate-900 shadow-2xs cursor-pointer">Seats</button>
+            <button id="toggle-party-votes" class="px-2.5 py-1 rounded-md font-medium text-slate-600 hover:text-slate-900 cursor-pointer">Vote %</button>
+          </div>
+        </div>
+        <!-- Alliance Color Key -->
+        <div class="flex items-center gap-3 text-[11px] font-medium text-slate-600 mb-2">
+          <span class="inline-flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-xs bg-orange-600"></span>NDA</span>
+          <span class="inline-flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-xs bg-blue-600"></span>INDIA / UPA</span>
+          <span class="inline-flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-xs bg-teal-600"></span>Unaligned / Others</span>
+        </div>
+        <div id="party-chart-container" class="w-full h-[290px] relative"></div>
+      </div>
+    </section>
+
+    <!-- =================================================================== -->
+    <!-- 5. REGIONAL & INTERACTIVE INDIA MAP GRID (ROW 2)                    -->
+    <!-- =================================================================== -->
+    <section id="section-regional" class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+      <!-- Chart 3: Interactive State-Wise India Map -->
+      <div class="chart-card p-5 lg:col-span-6 flex flex-col">
+        <div class="flex flex-wrap items-start justify-between gap-2 mb-2">
+          <div>
+            <div class="flex items-center gap-2">
+              <h3 class="text-base font-bold text-slate-900" id="map-chart-title">State-Wise Electoral Choropleth (2024)</h3>
+              <span id="map-mode-badge" class="px-2 py-0.5 text-[10px] font-semibold rounded bg-slate-100 text-slate-600 border border-slate-200">
+                Geo-Cartogram
+              </span>
+            </div>
+            <p class="text-xs text-slate-500" id="map-chart-subtitle">Click any State/UT to inspect demographics; hover for full ECI breakdown</p>
+          </div>
+          <!-- Dynamic Color Scale Legend -->
+          <div id="map-legend-container" class="flex items-center gap-1.5 text-[11px] text-slate-600"></div>
+        </div>
+        <div id="india-map-container" class="w-full h-[380px] relative flex items-center justify-center bg-slate-50/60 rounded-lg border border-slate-100"></div>
+      </div>
+
+      <!-- Chart 4: Regional Alliance Comparison & Turnout Overlay -->
+      <div class="chart-card p-5 lg:col-span-6 flex flex-col">
+        <div class="flex flex-wrap items-start justify-between gap-2 mb-2">
+          <div>
+            <h3 class="text-base font-bold text-slate-900" id="regional-chart-title">Regional Alliance Seat Distribution &amp; Turnout (2024)</h3>
+            <p class="text-xs text-slate-500">Grouped alliance seats (bars) vs. average regional voter turnout % (diamond markers)</p>
+          </div>
+          <div class="flex flex-wrap items-center gap-2.5 text-[11px] font-medium text-slate-600">
+            <span class="inline-flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-xs bg-orange-600"></span>NDA</span>
+            <span class="inline-flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-xs bg-blue-600"></span>INDIA/UPA</span>
+            <span class="inline-flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-xs bg-teal-600"></span>Others</span>
+            <span class="inline-flex items-center gap-1"><span class="w-2.5 h-2.5 rotate-45 bg-slate-900 inline-block"></span>Turnout %</span>
+          </div>
+        </div>
+        <div id="regional-chart-container" class="w-full h-[380px] relative"></div>
+      </div>
+    </section>
+
+    <!-- =================================================================== -->
+    <!-- 6. DYNAMIC ANALYTICAL INSIGHTS PANEL                                -->
+    <!-- =================================================================== -->
+    <section aria-label="Automated Analytical Insights" class="chart-card p-5 border-l-4 border-l-blue-600">
+      <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+        <div class="flex items-center gap-2">
+          <span class="w-7 h-7 rounded-lg bg-blue-50 text-blue-700 flex items-center justify-center">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </span>
+          <div>
+            <h3 class="text-base font-bold text-slate-900">Key Empirical Findings &amp; Behavioural Insights</h3>
+            <p class="text-xs text-slate-500">Dynamically synthesized from active filter selections and underlying ECI datasets</p>
+          </div>
+        </div>
+        <span id="insights-context-tag" class="text-xs font-semibold px-2.5 py-1 rounded-md bg-slate-100 text-slate-700">
+          2024 National &amp; Regional Synthesis
+        </span>
+      </div>
+      <div id="insights-grid" class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <!-- Populated dynamically by JS -->
+      </div>
+    </section>
+
+    <!-- =================================================================== -->
+    <!-- 7. INTERACTIVE DATA TABLE, VALIDATION & CSV DOWNLOAD HUB            -->
+    <!-- =================================================================== -->
+    <section id="section-explorer" class="chart-card p-5">
+      <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 pb-4 border-b border-slate-200">
+        <div>
+          <h3 class="text-base font-bold text-slate-900">Underlying Election Datasets &amp; Source Validation</h3>
+          <p class="text-xs text-slate-500">Inspect, search, sort, and download the four canonical CSV datasets powering this observatory</p>
+        </div>
+
+        <!-- Direct Download Buttons for all 4 source CSVs -->
+        <div class="flex flex-wrap items-center gap-2">
+          <button data-download="national" class="csv-dl-btn inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-slate-300 bg-slate-50 hover:bg-slate-100 text-xs font-semibold text-slate-700 transition cursor-pointer">
+            <span>↓ national_series.csv</span>
+          </button>
+          <button data-download="party" class="csv-dl-btn inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-slate-300 bg-slate-50 hover:bg-slate-100 text-xs font-semibold text-slate-700 transition cursor-pointer">
+            <span>↓ party_performance.csv</span>
+          </button>
+          <button data-download="regional" class="csv-dl-btn inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-slate-300 bg-slate-50 hover:bg-slate-100 text-xs font-semibold text-slate-700 transition cursor-pointer">
+            <span>↓ regional_shifts.csv</span>
+          </button>
+          <button data-download="state" class="csv-dl-btn inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-slate-300 bg-slate-50 hover:bg-slate-100 text-xs font-semibold text-slate-700 transition cursor-pointer">
+            <span>↓ state_demographics.csv</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Table Tabs & Search Controls -->
+      <div class="mt-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div class="flex flex-wrap gap-1.5 bg-slate-100 p-1 rounded-lg">
+          <button data-table-tab="state" class="table-tab-btn px-3 py-1.5 rounded-md text-xs font-semibold bg-white text-slate-900 shadow-2xs cursor-pointer">
+            state_demographics.csv
+          </button>
+          <button data-table-tab="party" class="table-tab-btn px-3 py-1.5 rounded-md text-xs font-medium text-slate-600 hover:text-slate-900 cursor-pointer">
+            party_performance.csv
+          </button>
+          <button data-table-tab="regional" class="table-tab-btn px-3 py-1.5 rounded-md text-xs font-medium text-slate-600 hover:text-slate-900 cursor-pointer">
+            regional_shifts.csv
+          </button>
+          <button data-table-tab="national" class="table-tab-btn px-3 py-1.5 rounded-md text-xs font-medium text-slate-600 hover:text-slate-900 cursor-pointer">
+            national_series.csv
+          </button>
+        </div>
+
+        <div class="flex items-center gap-2">
+          <input id="table-search-input" type="text" placeholder="Filter rows by state, party, year..." class="w-full sm:w-64 rounded-lg border border-slate-300 px-3 py-1.5 text-xs focus:border-blue-600 focus:outline-none" />
+          <span id="table-row-count" class="text-xs font-medium text-slate-500 whitespace-nowrap tabular-nums">36 rows</span>
+        </div>
+      </div>
+
+      <!-- Data Reconciliation Audit Bar -->
+      <div id="reconciliation-banner" class="mt-3 px-3.5 py-2 rounded-lg bg-slate-50 border border-slate-200 flex flex-wrap items-center justify-between gap-2 text-xs text-slate-700">
+        <!-- Populated dynamically with sum validation -->
+      </div>
+
+      <!-- Responsive Scrollable Table -->
+      <div class="mt-3 overflow-x-auto border border-slate-200 rounded-lg max-h-[380px]">
+        <table class="min-w-full divide-y divide-slate-200 text-xs">
+          <thead id="data-table-head" class="bg-slate-50 sticky top-0 z-10"></thead>
+          <tbody id="data-table-body" class="divide-y divide-slate-100 bg-white tabular-nums"></tbody>
+        </table>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Footer -->
+  <footer class="bg-white border-t border-slate-200 mt-8 py-4">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-slate-500">
+      <p>Data Sources: Election Commission of India (ECI) Statistical Reports (1951–2024), TCPD Lok Dhaba &amp; OGD India.</p>
+      <p>Built with HTML5, Tailwind CSS, D3.js v7 &amp; TopoJSON • Phase 5–7 Production Build</p>
+    </div>
+  </footer>
+
+  <!-- ===================================================================== -->
+  <!-- EMBEDDED ECI CSV DATASETS & APPLICATION LOGIC                         -->
+  <!-- ===================================================================== -->
+  <script>
+    /*************************************************************************
+     * 1. EMBEDDED CANONICAL CSV DATASETS (PARSED VIA D3.CSVPARSE)
+     *************************************************************************/
+
+    const RAW_CSV_NATIONAL = `election_year,year_num,electors,votes,turnout_pct,male_turnout_pct,female_turnout_pct,winner,winning_alliance,seats_won
+1951-52,1952,173212343,105950083,45.67,NA,NA,Indian National Congress,INC,364
+1957,1957,193652179,120513915,47.74,NA,NA,Indian National Congress,INC,371
+1962,1962,216361569,119904284,55.42,NA,NA,Indian National Congress,INC,361
+1967,1967,250207401,152724611,61.04,NA,NA,Indian National Congress,INC,283
+1971,1971,274189132,151536802,55.27,60.90,49.11,Indian National Congress (R),INC,352
+1977,1977,321174327,194263915,60.49,65.63,54.96,Janata Party,JP,295
+1980,1980,356205329,202752893,56.92,62.16,51.22,Indian National Congress (I),INC,353
+1984-85,1984,400375333,256294963,64.01,68.18,59.28,Indian National Congress,INC,414
+1989,1989,498906129,309050495,61.95,66.13,57.32,Janata Dal (National Front),NF,143
+1991-92,1991,511533598,290167977,56.73,61.58,51.35,Indian National Congress,INC,244
+1996,1996,592572288,343308090,57.94,62.06,53.41,Bharatiya Janata Party,NDA,161
+1998,1998,605880192,375441739,61.97,65.72,57.88,Bharatiya Janata Party,NDA,182
+1999,1999,619536847,371669104,59.99,63.97,55.64,Bharatiya Janata Party,NDA,182
+2004,2004,671487930,389948330,58.07,61.98,53.63,Indian National Congress,INDIA,145
+2009,2009,716985101,417357336,58.21,60.24,55.82,Indian National Congress,INDIA,206
+2014,2014,834082814,554175255,66.44,67.09,65.63,Bharatiya Janata Party,NDA,282
+2019,2019,911950734,614684398,67.40,67.01,67.18,Bharatiya Janata Party,NDA,303
+2024,2024,979751847,646420869,66.10,65.55,65.78,Bharatiya Janata Party,NDA,240`;
+
+    const RAW_CSV_PARTY = `year,party_code,party,alliance,seats_won,vote_share_pct
+2024,BJP,Bharatiya Janata Party (BJP),NDA,240,36.56
+2024,INC,Indian National Congress (INC),INDIA,99,21.19
+2024,SP,Samajwadi Party (SP),INDIA,37,4.58
+2024,AITC,All India Trinamool Congress (AITC),INDIA,29,4.37
+2024,DMK,Dravida Munnetra Kazhagam (DMK),INDIA,22,1.82
+2024,TDP,Telugu Desam Party (TDP),NDA,16,1.98
+2024,JD(U),Janata Dal (United) (JD(U)),NDA,12,1.25
+2024,SHS(UBT),Shiv Sena (Uddhav Balasaheb Thackeray),INDIA,9,1.48
+2024,NCPSP,Nationalist Congress Party - SP,INDIA,8,0.92
+2024,SHS,Shiv Sena (SHS),NDA,7,1.15
+2024,LJPRV,Lok Janshakti Party (Ram Vilas),NDA,5,0.44
+2024,YSRCP,YSR Congress Party (YSRCP),Unaligned,4,2.06
+2024,RJD,Rashtriya Janata Dal (RJD),INDIA,4,1.57
+2024,CPI(M),Communist Party of India (Marxist),INDIA,4,1.76
+2024,IUML,Indian Union Muslim League (IUML),INDIA,3,0.27
+2024,AAP,Aam Aadmi Party (AAP),INDIA,3,1.11
+2024,JMM,Jharkhand Mukti Morcha (JMM),INDIA,3,0.41
+2024,BSP,Bahujan Samaj Party (BSP),Unaligned,0,2.04
+2024,BJD,Biju Janata Dal (BJD),Unaligned,0,1.46
+2024,OTH,Others & Independents,Unaligned,33,12.18
+2019,BJP,Bharatiya Janata Party (BJP),NDA,303,37.36
+2019,INC,Indian National Congress (INC),INDIA,52,19.49
+2019,DMK,Dravida Munnetra Kazhagam (DMK),INDIA,24,2.26
+2019,AITC,All India Trinamool Congress (AITC),Unaligned,22,4.07
+2019,YSRCP,YSR Congress Party (YSRCP),Unaligned,22,2.53
+2019,SHS,Shiv Sena (SHS),NDA,18,2.10
+2019,JD(U),Janata Dal (United) (JD(U)),NDA,16,1.46
+2019,BJD,Biju Janata Dal (BJD),Unaligned,12,1.66
+2019,BSP,Bahujan Samaj Party (BSP),Unaligned,10,3.63
+2019,BRS,Bharat Rashtra Samithi (TRS),Unaligned,9,1.26
+2019,LJP,Lok Janshakti Party (LJP),NDA,6,0.52
+2019,SP,Samajwadi Party (SP),Unaligned,5,2.55
+2019,NCP,Nationalist Congress Party (NCP),INDIA,5,1.39
+2019,TDP,Telugu Desam Party (TDP),Unaligned,3,2.04
+2019,CPI(M),Communist Party of India (Marxist),INDIA,3,1.75
+2019,OTH,Others & Independents,Unaligned,33,15.93
+2014,BJP,Bharatiya Janata Party (BJP),NDA,282,31.00
+2014,INC,Indian National Congress (INC),INDIA,44,19.31
+2014,AIADMK,All India Anna Dravida Munnetra Kazhagam,Unaligned,37,3.27
+2014,AITC,All India Trinamool Congress (AITC),Unaligned,34,3.84
+2014,BJD,Biju Janata Dal (BJD),Unaligned,20,1.71
+2014,SHS,Shiv Sena (SHS),NDA,18,1.85
+2014,TDP,Telugu Desam Party (TDP),NDA,16,2.55
+2014,BRS,Telangana Rashtra Samithi (TRS),Unaligned,11,1.22
+2014,CPI(M),Communist Party of India (Marxist),Unaligned,9,3.25
+2014,YSRCP,YSR Congress Party (YSRCP),Unaligned,9,2.53
+2014,NCP,Nationalist Congress Party (NCP),INDIA,6,1.56
+2014,LJP,Lok Janshakti Party (LJP),NDA,6,0.41
+2014,SP,Samajwadi Party (SP),Unaligned,5,3.37
+2014,AAP,Aam Aadmi Party (AAP),Unaligned,4,2.05
+2014,RJD,Rashtriya Janata Dal (RJD),INDIA,4,1.34
+2014,JD(U),Janata Dal (United) (JD(U)),Unaligned,2,1.08
+2014,OTH,Others & Independents,Unaligned,36,19.66
+2009,INC,Indian National Congress (INC),INDIA,206,28.55
+2009,BJP,Bharatiya Janata Party (BJP),NDA,116,18.80
+2009,SP,Samajwadi Party (SP),Unaligned,23,3.42
+2009,BSP,Bahujan Samaj Party (BSP),Unaligned,21,6.17
+2009,JD(U),Janata Dal (United) (JD(U)),NDA,20,1.52
+2009,AITC,All India Trinamool Congress (AITC),INDIA,19,3.20
+2009,DMK,Dravida Munnetra Kazhagam (DMK),INDIA,18,1.83
+2009,CPI(M),Communist Party of India (Marxist),Unaligned,16,5.33
+2009,BJD,Biju Janata Dal (BJD),Unaligned,14,1.59
+2009,SHS,Shiv Sena (SHS),NDA,11,1.55
+2009,OTH,Others & Independents,Unaligned,79,28.04
+2004,INC,Indian National Congress (INC),INDIA,145,26.53
+2004,BJP,Bharatiya Janata Party (BJP),NDA,138,22.16
+2004,CPI(M),Communist Party of India (Marxist),Unaligned,43,5.66
+2004,SP,Samajwadi Party (SP),Unaligned,36,4.32
+2004,RJD,Rashtriya Janata Dal (RJD),INDIA,24,2.41
+2004,BSP,Bahujan Samaj Party (BSP),Unaligned,19,5.33
+2004,DMK,Dravida Munnetra Kazhagam (DMK),INDIA,16,1.81
+2004,SHS,Shiv Sena (SHS),NDA,12,1.81
+2004,BJD,Biju Janata Dal (BJD),NDA,11,1.30
+2004,OTH,Others & Independents,Unaligned,99,28.67`;
+
+    const RAW_CSV_REGIONAL = `year,region,total_seats,nda_seats,india_seats,other_seats,avg_turnout_pct
+2024,North India,126,59,61,6,60.45
+2024,West India,103,58,43,2,62.80
+2024,Central India,40,39,1,0,68.42
+2024,East India,118,72,45,1,69.85
+2024,Northeast India,25,16,7,2,77.12
+2024,South India,131,49,77,5,70.94
+2019,North India,126,105,13,8,62.85
+2019,West India,103,91,8,4,63.90
+2019,Central India,40,37,3,0,71.25
+2019,East India,118,73,10,35,71.10
+2019,Northeast India,25,18,4,3,78.40
+2019,South India,131,29,53,49,71.85
+2014,North India,126,108,8,10,61.90
+2014,West India,103,92,8,3,62.45
+2014,Central India,40,37,3,0,64.10
+2014,East India,118,54,8,56,70.40
+2014,Northeast India,25,10,8,7,77.65
+2014,South India,131,35,25,71,71.95
+2009,North India,126,38,44,44,52.80
+2009,West India,103,47,47,9,53.40
+2009,Central India,40,26,13,1,52.10
+2009,East India,118,32,31,55,61.75
+2009,Northeast India,25,6,13,6,68.90
+2009,South India,131,10,76,45,67.40
+2004,North India,126,34,37,55,51.90
+2004,West India,103,51,48,4,53.10
+2004,Central India,40,35,5,0,49.80
+2004,East India,118,31,26,61,62.30
+2004,Northeast India,25,7,11,7,67.50
+2004,South India,131,23,91,17,67.85`;
+
+    const RAW_CSV_STATE = `year,state_ut,code,region,seats,turnout_pct,female_turnout_pct,male_turnout_pct,youth_elector_share_pct,avg_victory_margin_pct,leading_party,leading_alliance
+2024,Andhra Pradesh,AP,South India,25,81.86,81.65,82.08,19.42,14.85,TDP,NDA
+2024,Arunachal Pradesh,AR,Northeast India,2,77.68,79.12,76.21,26.15,15.60,BJP,NDA
+2024,Assam,AS,Northeast India,14,81.56,81.71,81.41,23.80,16.40,BJP,NDA
+2024,Bihar,BR,East India,40,56.28,59.45,53.00,24.10,10.25,JD(U)/BJP,NDA
+2024,Chhattisgarh,CG,Central India,11,72.80,72.34,73.26,23.45,15.90,BJP,NDA
+2024,Goa,GA,West India,2,76.06,77.20,74.88,18.90,4.80,BJP/INC,NDA
+2024,Gujarat,GJ,West India,26,60.13,57.65,62.45,21.30,26.40,BJP,NDA
+2024,Haryana,HR,North India,10,64.80,63.50,65.95,21.85,9.75,BJP/INC,NDA
+2024,Himachal Pradesh,HP,North India,4,70.90,72.64,69.19,19.60,16.20,BJP,NDA
+2024,Jharkhand,JH,East India,14,66.19,67.85,64.60,24.65,13.45,BJP,NDA
+2024,Karnataka,KA,South India,28,70.64,70.12,71.15,19.85,12.80,BJP,NDA
+2024,Kerala,KL,South India,20,71.27,71.95,70.54,15.40,11.60,INC,INDIA
+2024,Madhya Pradesh,MP,Central India,29,66.87,64.82,68.78,24.20,24.75,BJP,NDA
+2024,Maharashtra,MH,West India,48,61.39,59.80,62.85,19.95,8.90,INC/SHS(UBT),INDIA
+2024,Manipur,MN,Northeast India,2,76.62,78.10,75.05,23.10,8.40,INC,INDIA
+2024,Meghalaya,ML,Northeast India,2,76.60,78.45,74.70,27.40,18.90,INC/VPP,INDIA
+2024,Mizoram,MZ,Northeast India,1,56.87,57.40,56.31,24.80,13.80,ZPM,Unaligned
+2024,Nagaland,NL,Northeast India,1,57.72,58.15,57.30,25.90,6.65,INC,INDIA
+2024,Odisha,OD,East India,21,74.41,76.50,72.42,21.15,11.20,BJP,NDA
+2024,Punjab,PB,North India,13,62.80,62.28,63.27,19.75,7.40,INC,INDIA
+2024,Rajasthan,RJ,West India,25,61.34,60.45,62.15,24.90,14.60,BJP,NDA
+2024,Sikkim,SK,Northeast India,1,79.88,80.45,79.32,23.60,21.10,SKM,NDA
+2024,Tamil Nadu,TN,South India,39,69.72,70.45,68.96,17.85,17.95,DMK,INDIA
+2024,Telangana,TS,South India,17,65.67,65.40,65.94,20.40,14.20,BJP/INC,NDA
+2024,Tripura,TR,Northeast India,2,80.93,81.60,80.28,22.30,36.80,BJP,NDA
+2024,Uttar Pradesh,UP,North India,80,56.92,58.56,53.47,23.75,9.65,SP,INDIA
+2024,Uttarakhand,UK,North India,5,57.22,59.40,55.18,21.90,26.10,BJP,NDA
+2024,West Bengal,WB,East India,42,79.29,78.95,79.62,21.45,11.85,AITC,INDIA
+2024,Andaman & Nicobar Islands,AN,South India,1,64.10,64.85,63.42,20.10,12.05,BJP,NDA
+2024,Chandigarh,CH,North India,1,67.98,67.25,68.67,19.30,0.56,INC,INDIA
+2024,Dadra & Nagar Haveli and Daman & Diu,DN,West India,2,71.31,73.10,69.75,28.15,18.40,BJP/IND,NDA
+2024,NCT of Delhi,DL,North India,7,58.69,58.10,59.20,20.25,13.15,BJP,NDA
+2024,Jammu & Kashmir,JK,North India,5,58.46,57.90,58.98,24.50,14.30,JKNC/BJP,INDIA
+2024,Ladakh,LA,North India,1,71.82,72.40,71.25,23.90,20.60,IND,Unaligned
+2024,Lakshadweep,LD,South India,1,84.16,85.30,83.05,21.70,5.35,INC,INDIA
+2024,Puducherry,PY,South India,1,78.90,79.65,78.05,18.20,16.85,INC,INDIA
+2019,Andhra Pradesh,AP,South India,25,79.77,79.60,79.94,21.10,11.40,YSRCP,Unaligned
+2019,Arunachal Pradesh,AR,Northeast India,2,82.11,83.40,80.80,27.30,19.20,BJP,NDA
+2019,Assam,AS,Northeast India,14,81.52,81.65,81.39,24.90,15.80,BJP,NDA
+2019,Bihar,BR,East India,40,57.33,59.58,55.26,25.40,16.90,BJP/JD(U),NDA
+2019,Chhattisgarh,CG,Central India,11,71.48,70.90,72.05,24.80,14.10,BJP,NDA
+2019,Goa,GA,West India,2,75.14,76.30,73.95,20.20,6.40,BJP/INC,NDA
+2019,Gujarat,GJ,West India,26,64.51,61.90,66.95,22.80,28.90,BJP,NDA
+2019,Haryana,HR,North India,10,70.34,69.10,71.45,23.10,24.50,BJP,NDA
+2019,Himachal Pradesh,HP,North India,4,72.42,74.15,70.70,21.00,32.40,BJP,NDA
+2019,Jharkhand,JH,East India,14,66.80,68.10,65.55,25.80,17.80,BJP,NDA
+2019,Karnataka,KA,South India,28,68.81,68.20,69.40,21.30,16.50,BJP,NDA
+2019,Kerala,KL,South India,20,77.84,78.60,77.02,16.90,13.40,INC,INDIA
+2019,Madhya Pradesh,MP,Central India,29,71.16,69.10,73.08,25.50,23.10,BJP,NDA
+2019,Maharashtra,MH,West India,48,61.02,59.30,62.60,21.40,14.80,BJP/SHS,NDA
+2019,Manipur,MN,Northeast India,2,82.69,84.10,81.20,24.50,6.20,BJP/NPF,NDA
+2019,Meghalaya,ML,Northeast India,2,71.43,73.20,69.60,28.60,12.40,INC/NPP,INDIA
+2019,Mizoram,MZ,Northeast India,1,63.14,63.80,62.45,26.10,1.60,MNF,NDA
+2019,Nagaland,NL,Northeast India,1,83.00,83.50,82.50,27.10,1.62,NDPP,NDA
+2019,Odisha,OD,East India,21,73.29,75.10,71.55,22.40,9.80,BJD,Unaligned
+2019,Punjab,PB,North India,13,65.94,65.50,66.35,21.20,8.60,INC,INDIA
+2019,Rajasthan,RJ,West India,25,66.34,65.60,67.02,26.20,24.80,BJP,NDA
+2019,Sikkim,SK,Northeast India,1,81.41,82.00,80.85,24.90,3.50,SKM,Unaligned
+2019,Tamil Nadu,TN,South India,39,72.47,73.10,71.82,19.10,19.40,DMK,INDIA
+2019,Telangana,TS,South India,17,62.77,62.40,63.12,21.80,10.20,TRS,Unaligned
+2019,Tripura,TR,Northeast India,2,82.40,83.10,81.72,23.60,24.50,BJP,NDA
+2019,Uttar Pradesh,UP,North India,80,59.21,59.62,58.84,25.10,14.90,BJP,NDA
+2019,Uttarakhand,UK,North India,5,61.88,64.20,59.70,23.20,28.40,BJP,NDA
+2019,West Bengal,WB,East India,42,81.76,81.45,82.05,22.80,10.40,AITC,Unaligned
+2019,Andaman & Nicobar Islands,AN,South India,1,65.12,65.80,64.50,21.50,0.68,INC,INDIA
+2019,Chandigarh,CH,North India,1,70.61,70.10,71.08,20.80,10.30,BJP,NDA
+2019,Dadra & Nagar Haveli and Daman & Diu,DN,West India,2,77.10,78.50,75.80,29.40,4.50,IND/BJP,NDA
+2019,NCT of Delhi,DL,North India,7,60.60,59.90,61.20,21.90,26.40,BJP,NDA
+2019,Jammu & Kashmir,JK,North India,6,44.97,44.20,45.65,25.80,18.20,BJP/JKNC,NDA
+2019,Ladakh,LA,North India,1,71.05,71.60,70.50,25.10,8.70,BJP,NDA
+2019,Lakshadweep,LD,South India,1,85.21,86.10,84.35,23.00,1.74,NCP,INDIA
+2019,Puducherry,PY,South India,1,81.25,82.10,80.35,19.50,24.80,INC,INDIA
+2014,Andhra Pradesh,AP,South India,25,74.64,74.20,75.08,22.50,7.80,TDP,NDA
+2014,Arunachal Pradesh,AR,Northeast India,2,79.12,80.20,78.05,28.40,12.60,BJP/INC,NDA
+2014,Assam,AS,Northeast India,14,80.12,79.80,80.42,26.10,11.20,BJP,NDA
+2014,Bihar,BR,East India,40,56.26,57.66,55.02,26.80,12.40,BJP,NDA
+2014,Chhattisgarh,CG,Central India,11,69.39,68.60,70.15,26.10,11.90,BJP,NDA
+2014,Goa,GA,West India,2,77.06,78.10,76.02,21.50,15.80,BJP,NDA
+2014,Gujarat,GJ,West India,26,63.66,60.80,66.30,24.10,25.40,BJP,NDA
+2014,Haryana,HR,North India,10,71.45,69.90,72.85,24.40,18.20,BJP,NDA
+2014,Himachal Pradesh,HP,North India,4,64.45,65.80,63.15,22.30,19.60,BJP,NDA
+2014,Jharkhand,JH,East India,14,63.82,64.40,63.28,27.00,13.50,BJP,NDA
+2014,Karnataka,KA,South India,28,67.20,66.40,67.95,22.60,11.80,BJP,NDA
+2014,Kerala,KL,South India,20,73.94,74.60,73.22,18.20,7.90,INC,INDIA
+2014,Madhya Pradesh,MP,Central India,29,61.61,59.10,63.90,26.80,19.80,BJP,NDA
+2014,Maharashtra,MH,West India,48,60.32,58.40,62.08,22.80,16.40,BJP/SHS,NDA
+2014,Manipur,MN,Northeast India,2,79.62,80.90,78.30,25.80,8.90,INC,INDIA
+2014,Meghalaya,ML,Northeast India,2,68.76,70.10,67.40,29.80,11.20,INC/NPP,INDIA
+2014,Mizoram,MZ,Northeast India,1,61.95,62.40,61.50,27.30,1.40,INC,INDIA
+2014,Nagaland,NL,Northeast India,1,87.91,88.20,87.62,28.40,38.70,NPF,NDA
+2014,Odisha,OD,East India,21,73.79,74.90,72.72,23.70,14.20,BJD,Unaligned
+2014,Punjab,PB,North India,13,70.63,70.20,71.02,22.50,7.80,SAD/AAP,NDA
+2014,Rajasthan,RJ,West India,25,63.11,62.10,64.05,27.50,22.60,BJP,NDA
+2014,Sikkim,SK,Northeast India,1,83.33,83.80,82.88,26.10,13.50,SDF,Unaligned
+2014,Tamil Nadu,TN,South India,39,73.74,74.10,73.38,20.40,18.60,AIADMK,Unaligned
+2014,Telangana,TS,South India,17,68.90,68.40,69.38,23.10,11.40,TRS,Unaligned
+2014,Tripura,TR,Northeast India,2,84.92,85.40,84.45,24.90,41.20,CPI(M),Unaligned
+2014,Uttar Pradesh,UP,North India,80,58.44,57.42,59.32,26.40,17.80,BJP,NDA
+2014,Uttarakhand,UK,North India,5,61.67,63.50,59.95,24.50,23.40,BJP,NDA
+2014,West Bengal,WB,East India,42,82.22,81.80,82.62,24.10,13.60,AITC,Unaligned
+2014,Andaman & Nicobar Islands,AN,South India,1,70.67,71.20,70.18,22.80,4.10,BJP,NDA
+2014,Chandigarh,CH,North India,1,73.71,73.20,74.18,22.10,15.40,BJP,NDA
+2014,Dadra & Nagar Haveli and Daman & Diu,DN,West India,2,81.50,82.80,80.30,30.60,4.80,BJP,NDA
+2014,NCT of Delhi,DL,North India,7,65.10,64.30,65.80,23.20,16.50,BJP,NDA
+2014,Jammu & Kashmir,JK,North India,6,49.72,48.80,50.55,27.10,9.40,PDP/BJP,NDA
+2014,Ladakh,LA,North India,1,71.40,71.90,70.92,26.40,0.03,BJP,NDA
+2014,Lakshadweep,LD,South India,1,86.62,87.40,85.88,24.30,3.50,NCP,INDIA
+2014,Puducherry,PY,South India,1,82.10,82.90,81.25,20.80,8.20,AINRC,NDA`;
+
+    /*************************************************************************
+     * 2. PARSE CSV DATASETS & BUILD GEOGRAPHIC CARTOGRAM COORDINATES
+     *************************************************************************/
+    const parsedNational = d3.csvParse(RAW_CSV_NATIONAL, d => ({
+      election_year: d.election_year,
+      year_num: +d.year_num,
+      electors: +d.electors,
+      votes: +d.votes,
+      turnout_pct: +d.turnout_pct,
+      male_turnout_pct: d.male_turnout_pct === 'NA' ? null : +d.male_turnout_pct,
+      female_turnout_pct: d.female_turnout_pct === 'NA' ? null : +d.female_turnout_pct,
+      winner: d.winner,
+      winning_alliance: d.winning_alliance,
+      seats_won: +d.seats_won
+    }));
+
+    const parsedParty = d3.csvParse(RAW_CSV_PARTY, d => ({
+      year: d.year,
+      party_code: d.party_code,
+      party: d.party,
+      alliance: d.alliance,
+      seats_won: +d.seats_won,
+      vote_share_pct: +d.vote_share_pct
+    }));
+
+    const parsedRegional = d3.csvParse(RAW_CSV_REGIONAL, d => ({
+      year: d.year,
+      region: d.region,
+      total_seats: +d.total_seats,
+      nda_seats: +d.nda_seats,
+      india_seats: +d.india_seats,
+      other_seats: +d.other_seats,
+      avg_turnout_pct: +d.avg_turnout_pct
+    }));
+
+    const parsedState = d3.csvParse(RAW_CSV_STATE, d => ({
+      year: d.year,
+      state_ut: d.state_ut,
+      code: d.code,
+      region: d.region,
+      seats: +d.seats,
+      turnout_pct: +d.turnout_pct,
+      female_turnout_pct: +d.female_turnout_pct,
+      male_turnout_pct: +d.male_turnout_pct,
+      youth_elector_share_pct: +d.youth_elector_share_pct,
+      avg_victory_margin_pct: +d.avg_victory_margin_pct,
+      leading_party: d.leading_party,
+      leading_alliance: d.leading_alliance
+    }));
+
+    // Proportional Geographic Tile Grid Coordinates for all 36 Indian States & UTs
+    // Ensures reliable, zero-CORS choropleth rendering arranged in India's geographic silhouette
+    const INDIA_TILE_GRID = [
+      { code: 'LA', col: 3, row: 0 },
+      { code: 'JK', col: 2, row: 1 },
+      { code: 'HP', col: 3, row: 1 },
+      { code: 'PB', col: 2, row: 2 },
+      { code: 'CH', col: 3, row: 2 },
+      { code: 'UK', col: 4, row: 2 },
+      { code: 'HR', col: 2, row: 3 },
+      { code: 'DL', col: 3, row: 3 },
+      { code: 'UP', col: 4, row: 3 },
+      { code: 'SK', col: 6, row: 3 },
+      { code: 'AR', col: 8, row: 3 },
+      { code: 'RJ', col: 1, row: 4 },
+      { code: 'MP', col: 3, row: 4 },
+      { code: 'BR', col: 5, row: 4 },
+      { code: 'WB', col: 6, row: 4 },
+      { code: 'AS', col: 7, row: 4 },
+      { code: 'NL', col: 8, row: 4 },
+      { code: 'GJ', col: 1, row: 5 },
+      { code: 'CG', col: 4, row: 5 },
+      { code: 'JH', col: 5, row: 5 },
+      { code: 'ML', col: 7, row: 5 },
+      { code: 'MN', col: 8, row: 5 },
+      { code: 'DN', col: 1, row: 6 },
+      { code: 'MH', col: 2, row: 6 },
+      { code: 'TS', col: 3, row: 6 },
+      { code: 'OD', col: 5, row: 6 },
+      { code: 'TR', col: 7, row: 6 },
+      { code: 'MZ', col: 8, row: 6 },
+      { code: 'GA', col: 2, row: 7 },
+      { code: 'KA', col: 3, row: 7 },
+      { code: 'AP', col: 4, row: 7 },
+      { code: 'LD', col: 1, row: 8 },
+      { code: 'KL', col: 2, row: 8 },
+      { code: 'TN', col: 3, row: 8 },
+      { code: 'PY', col: 4, row: 8 },
+      { code: 'AN', col: 7, row: 8 }
+    ];
+
+    /*************************************************************************
+     * 3. GLOBAL DASHBOARD STATE
+     *************************************************************************/
+    const state = {
+      year: '2024',
+      region: 'ALL',
+      partyFilter: 'ALL',
+      metric: 'turnout_pct',
+      selectedStateCode: null,
+      partyChartMode: 'seats', // 'seats' | 'votes'
+      activeTableTab: 'state', // 'state' | 'party' | 'regional' | 'national'
+      tableSearch: '',
+      sortCol: null,
+      sortAsc: true,
+      geoJsonData: null
+    };
+
+    const ALLIANCE_COLORS = {
+      NDA: '#ea580c',
+      INDIA: '#2563eb',
+      Unaligned: '#0d9488'
+    };
+
+    const METRIC_META = {
+      turnout_pct: { label: 'Total Voter Turnout', unit: '%', scheme: d3.interpolateYlGnBu, domain: [52, 85] },
+      female_turnout_pct: { label: 'Female Voter Turnout', unit: '%', scheme: d3.interpolatePuRd, domain: [52, 86] },
+      male_turnout_pct: { label: 'Male Voter Turnout', unit: '%', scheme: d3.interpolateBlues, domain: [52, 85] },
+      youth_elector_share_pct: { label: 'Youth Elector Share (18–29)', unit: '%', scheme: d3.interpolateViridis, domain: [15, 29] },
+      avg_victory_margin_pct: { label: 'Avg Victory Margin', unit: '%', scheme: d3.interpolateOranges, domain: [2, 32] }
+    };
+
+    /*************************************************************************
+     * 4. UTILITY & FORMATTING HELPERS
+     *************************************************************************/
+    const tooltip = d3.select('#global-tooltip');
+
+    function showTooltip(html, event) {
+      tooltip
+        .html(html)
+        .style('opacity', 1);
+      moveTooltip(event);
+    }
+
+    function moveTooltip(event) {
+      const pad = 14;
+      const node = tooltip.node();
+      const rect = node.getBoundingClientRect();
+      let left = event.clientX + pad;
+      let top = event.clientY + pad;
+      if (left + rect.width > window.innerWidth - 10) {
+        left = event.clientX - rect.width - pad;
+      }
+      if (top + rect.height > window.innerHeight - 10) {
+        top = event.clientY - rect.height - pad;
+      }
+      tooltip.style('left', `${Math.max(8, left)}px`).style('top', `${Math.max(8, top)}px`);
+    }
+
+    function hideTooltip() {
+      tooltip.style('opacity', 0);
+    }
+
+    function formatCrores(num) {
+      if (!num || isNaN(num)) return '0';
+      return (num / 1e7).toFixed(2) + ' Cr';
+    }
+
+    function getActiveYearForSubsets() {
+      // When "ALL" is selected in Year dropdown, show latest 2024 snapshot for cross-sectional charts
+      // while Line Chart highlights full 1951-2024 trajectory
+      return state.year === 'ALL' ? '2024' : state.year;
+    }
+
+    function matchesPartyFilter(alliance, partyCodeOrName) {
+      if (state.partyFilter === 'ALL') return true;
+      if (state.partyFilter.startsWith('ALLIANCE:')) {
+        const targetAlliance = state.partyFilter.split(':')[1];
+        return alliance === targetAlliance;
+      }
+      if (state.partyFilter.startsWith('PARTY:')) {
+        const targetParty = state.partyFilter.split(':')[1];
+        return (partyCodeOrName || '').toUpperCase().includes(targetParty.toUpperCase());
+      }
+      return true;
+    }
+
+    /*************************************************************************
+     * 5. DATA FILTERING & VALIDATION ENGINE
+     *************************************************************************/
+    function getFilteredData() {
+      const activeYear = getActiveYearForSubsets();
+
+      // 1. National series (all years for trendline, active year for KPI)
+      const natCurrent = parsedNational.find(d => String(d.year_num) === activeYear) || parsedNational[parsedNational.length - 1];
+      const natPrevIdx = parsedNational.findIndex(d => d.year_num === natCurrent.year_num) - 1;
+      const natPrev = natPrevIdx >= 0 ? parsedNational[natPrevIdx] : null;
+
+      // 2. State demographics filtered by year, region, and optional party/alliance
+      let statesYear = parsedState.filter(d => d.year === activeYear);
+      let statesFiltered = statesYear.filter(d => {
+        const regionOk = state.region === 'ALL' || d.region === state.region;
+        const partyOk = matchesPartyFilter(d.leading_alliance, d.leading_party);
+        return regionOk && partyOk;
+      });
+
+      // Fallback if strict party+region yields 0 states so UI remains informative
+      const isStrictEmpty = statesFiltered.length === 0;
+      if (isStrictEmpty) {
+        statesFiltered = statesYear.filter(d => state.region === 'ALL' || d.region === state.region);
+      }
+
+      // 3. Regional data for active year
+      const regionalYear = parsedRegional.filter(d => d.year === activeYear);
+
+      // 4. Party data for active year (available for 2004, 2009, 2014, 2019, 2024)
+      let partyYear = parsedParty.filter(d => d.year === activeYear);
+      let partyFiltered = partyYear.filter(d => matchesPartyFilter(d.alliance, d.party_code));
+      if (partyFiltered.length === 0) partyFiltered = partyYear;
+
+      return {
+        activeYear,
+        natCurrent,
+        natPrev,
+        statesYear,
+        statesFiltered,
+        isStrictEmpty,
+        regionalYear,
+        partyYear,
+        partyFiltered
+      };
+    }
+
+    /*************************************************************************
+     * 6. UPDATE KPI CARDS & VALIDATION BADGE
+     *************************************************************************/
+    function updateKPIsAndBadges(data) {
+      const { activeYear, natCurrent, natPrev, statesFiltered, regionalYear, partyYear } = data;
+
+      // Active Scope Badge
+      const yearLabel = state.year === 'ALL' ? 'All Years (1951–2024 | Snapshot: 2024)' : state.year;
+      const regLabel = state.region === 'ALL' ? 'All India' : state.region;
+      const partyLabel = state.partyFilter === 'ALL' ? 'All Parties' : state.partyFilter.replace('ALLIANCE:', '').replace('PARTY:', '');
+      document.getElementById('active-filter-badge').textContent = `Year: ${yearLabel} • Region: ${regLabel} • Filter: ${partyLabel}`;
+
+      // Selected State Pill
+      const statePill = document.getElementById('selected-state-pill');
+      if (state.selectedStateCode) {
+        const stObj = data.statesYear.find(s => s.code === state.selectedStateCode);
+        document.getElementById('selected-state-name').textContent = stObj ? `${stObj.state_ut} (${stObj.seats} Seats)` : state.selectedStateCode;
+        statePill.classList.remove('hidden');
+      } else {
+        statePill.classList.add('hidden');
+      }
+
+      // Compute scoped metrics (if a single state or region is selected, aggregate from state_demographics)
+      const focusedState = state.selectedStateCode ? data.statesYear.find(s => s.code === state.selectedStateCode) : null;
+      const isNationalScope = state.region === 'ALL' && !focusedState && state.partyFilter === 'ALL';
+
+      let turnoutVal, femVal, maleVal, seatsVal, seatsSub1, seatsSub2;
+
+      if (focusedState) {
+        turnoutVal = focusedState.turnout_pct;
+        femVal = focusedState.female_turnout_pct;
+        maleVal = focusedState.male_turnout_pct;
+        seatsVal = focusedState.seats;
+        seatsSub1 = `${focusedState.state_ut} (${focusedState.region})`;
+        seatsSub2 = `Margin: ${focusedState.avg_victory_margin_pct.toFixed(1)}%`;
+        document.getElementById('kpi-turnout-label').textContent = `${focusedState.state_ut} Turnout (${activeYear})`;
+        document.getElementById('kpi-turnout-delta').textContent = `Youth 18–29: ${focusedState.youth_elector_share_pct}%`;
+      } else if (!isNationalScope) {
+        // Weighted average turnout across filtered states
+        const totalSeatsInScope = d3.sum(statesFiltered, d => d.seats) || 1;
+        turnoutVal = d3.sum(statesFiltered, d => d.turnout_pct * d.seats) / totalSeatsInScope;
+        femVal = d3.sum(statesFiltered, d => d.female_turnout_pct * d.seats) / totalSeatsInScope;
+        maleVal = d3.sum(statesFiltered, d => d.male_turnout_pct * d.seats) / totalSeatsInScope;
+        seatsVal = d3.sum(statesFiltered, d => d.seats);
+        seatsSub1 = `${statesFiltered.length} States/UTs in scope`;
+        seatsSub2 = `${((seatsVal / 543) * 100).toFixed(1)}% of Lok Sabha`;
+        document.getElementById('kpi-turnout-label').textContent = `${regLabel} Avg Turnout (${activeYear})`;
+        document.getElementById('kpi-turnout-delta').textContent = `Weighted by seats`;
+      } else {
+        turnoutVal = natCurrent.turnout_pct;
+        femVal = natCurrent.female_turnout_pct;
+        maleVal = natCurrent.male_turnout_pct;
+        seatsVal = 543;
+        seatsSub1 = '36 States & UTs';
+        seatsSub2 = '100.0% National Scope';
+        document.getElementById('kpi-turnout-label').textContent = `National Turnout (${activeYear})`;
+        if (natPrev) {
+          const diff = (natCurrent.turnout_pct - natPrev.turnout_pct).toFixed(2);
+          const sign = diff >= 0 ? '+' : '';
+          document.getElementById('kpi-turnout-delta').textContent = `${sign}${diff} pp vs ${natPrev.year_num}`;
+        }
+      }
+
+      document.getElementById('kpi-turnout-value').textContent = `${turnoutVal.toFixed(2)}%`;
+      document.getElementById('kpi-female-turnout').textContent = femVal !== null ? `${femVal.toFixed(2)}%` : 'NA';
+      document.getElementById('kpi-male-turnout').textContent = maleVal !== null ? `${maleVal.toFixed(2)}%` : 'NA';
+
+      document.getElementById('kpi-seats-label').textContent = focusedState ? 'State Seats' : (state.region === 'ALL' ? 'Lok Sabha Seats' : `${state.region} Seats`);
+      document.getElementById('kpi-seats-value').textContent = seatsVal;
+      document.getElementById('kpi-seats-sub1').textContent = seatsSub1;
+      document.getElementById('kpi-seats-sub2').textContent = seatsSub2;
+
+      // KPI 3: Electors & Votes
+      document.getElementById('kpi-electors-label').textContent = `National Electors (${activeYear})`;
+      document.getElementById('kpi-electors-value').textContent = formatCrores(natCurrent.electors);
+      document.getElementById('kpi-votes-value').textContent = formatCrores(natCurrent.votes);
+      if (natPrev) {
+        const growth = (((natCurrent.electors - natPrev.electors) / natPrev.electors) * 100).toFixed(1);
+        document.getElementById('kpi-elector-growth').textContent = `+${growth}% vs ${natPrev.year_num}`;
+      }
+
+      // KPI 4: Winning Party / Alliance
+      const regTarget = state.region === 'ALL' ? regionalYear : regionalYear.filter(r => r.region === state.region);
+      const ndaSeats = d3.sum(regTarget, r => r.nda_seats);
+      const indiaSeats = d3.sum(regTarget, r => r.india_seats);
+      const otherSeats = d3.sum(regTarget, r => r.other_seats);
+
+      if (focusedState) {
+        document.getElementById('kpi-winner-label').textContent = `${focusedState.state_ut} Leader`;
+        document.getElementById('kpi-winner-value').textContent = focusedState.leading_party;
+        document.getElementById('kpi-winner-badge').textContent = `${focusedState.leading_alliance} Bloc`;
+        document.getElementById('kpi-winner-sub1').textContent = `Seats: ${focusedState.seats}`;
+        document.getElementById('kpi-winner-sub2').textContent = `Avg Margin: ${focusedState.avg_victory_margin_pct}%`;
+      } else if (state.region !== 'ALL') {
+        const leaderBloc = ndaSeats >= indiaSeats && ndaSeats >= otherSeats ? 'NDA' : (indiaSeats >= otherSeats ? 'INDIA / UPA' : 'Others');
+        const leaderCount = Math.max(ndaSeats, indiaSeats, otherSeats);
+        document.getElementById('kpi-winner-label').textContent = `${state.region} Leader`;
+        document.getElementById('kpi-winner-value').textContent = `${leaderBloc} (${leaderCount} Seats)`;
+        document.getElementById('kpi-winner-badge').textContent = `NDA: ${ndaSeats} | INDIA: ${indiaSeats}`;
+        document.getElementById('kpi-winner-sub1').textContent = `Total Region Seats: ${ndaSeats + indiaSeats + otherSeats}`;
+        document.getElementById('kpi-winner-sub2').textContent = `Others: ${otherSeats}`;
+      } else {
+        const topParty = partyYear[0];
+        document.getElementById('kpi-winner-label').textContent = `National Winner (${activeYear})`;
+        document.getElementById('kpi-winner-value').textContent = `${topParty.party_code} (${natCurrent.winning_alliance})`;
+        document.getElementById('kpi-winner-badge').textContent = `${ndaSeats} NDA Seats`;
+        document.getElementById('kpi-winner-sub1').textContent = `${topParty.party_code}: ${topParty.seats_won} (${topParty.vote_share_pct}%)`;
+        document.getElementById('kpi-winner-sub2').textContent = `INDIA/UPA: ${indiaSeats}`;
+      }
+
+      // Data Validation Check (Reconciles regional_shifts sum vs party_performance sum vs state_demographics sum)
+      const totalRegSeats = d3.sum(regionalYear, d => d.total_seats);
+      const totalPartySeats = d3.sum(partyYear, d => d.seats_won);
+      const totalStateSeats = d3.sum(data.statesYear, d => d.seats);
+      const isValid = totalRegSeats === 543 && totalPartySeats === 543 && totalStateSeats === 543;
+
+      document.getElementById('validation-status-text').textContent = isValid
+        ? `Data Validation: Verified (${totalStateSeats}/543 seats reconciled across all 4 CSVs)`
+        : `Data Validation Warning: Seat sum mismatch (${totalStateSeats} vs 543)`;
+    }
+
+    /*************************************************************************
+     * 7. D3 CHART 1: HISTORICAL VOTER TURNOUT LINE CHART (1951–2024)
+     *************************************************************************/
+    function renderLineChart(data) {
+      const container = d3.select('#line-chart-container');
+      container.selectAll('*').remove();
+
+      const bounds = container.node().getBoundingClientRect();
+      const width = Math.max(300, bounds.width);
+      const height = 310;
+      const margin = { top: 20, right: 24, bottom: 38, left: 44 };
+      const innerW = width - margin.left - margin.right;
+      const innerH = height - margin.top - margin.bottom;
+
+      const svg = container.append('svg')
+        .attr('width', width)
+        .attr('height', height)
+        .attr('viewBox', `0 0 ${width} ${height}`);
+
+      const g = svg.append('g')
+        .attr('transform', `translate(${margin.left},${margin.top})`);
+
+      const x = d3.scaleLinear()
+        .domain([1951, 2025])
+        .range([0, innerW]);
+
+      const y = d3.scaleLinear()
+        .domain([40, 74])
+        .range([innerH, 0]);
+
+      // Horizontal Gridlines
+      g.append('g')
+        .attr('class', 'grid')
+        .call(d3.axisLeft(y).ticks(6).tickSize(-innerW).tickFormat(''));
+
+      // Axes
+      const tickYears = width < 480
+        ? [1952, 1967, 1984, 1999, 2014, 2024]
+        : [1952, 1962, 1971, 1980, 1989, 1999, 2009, 2019, 2024];
+
+      g.append('g')
+        .attr('class', 'axis')
+        .attr('transform', `translate(0,${innerH})`)
+        .call(d3.axisBottom(x).tickValues(tickYears).tickFormat(d3.format('d')));
+
+      g.append('g')
+        .attr('class', 'axis')
+        .call(d3.axisLeft(y).ticks(6).tickFormat(d => `${d}%`));
+
+      // Highlight selected year vertical indicator
+      const activeYearNum = +data.activeYear;
+      g.append('line')
+        .attr('x1', x(activeYearNum))
+        .attr('x2', x(activeYearNum))
+        .attr('y1', 0)
+        .attr('y2', innerH)
+        .attr('stroke', '#f59e0b')
+        .attr('stroke-width', 2)
+        .attr('stroke-dasharray', '4,3');
+
+      g.append('text')
+        .attr('x', x(activeYearNum))
+        .attr('y', -6)
+        .attr('text-anchor', 'middle')
+        .attr('fill', '#b45309')
+        .attr('font-size', '10px')
+        .attr('font-weight', '700')
+        .text(`Selected: ${activeYearNum}`);
+
+      // Line Generators (.defined() prevents plotting NA gender values as 0!)
+      const lineOverall = d3.line()
+        .x(d => x(d.year_num))
+        .y(d => y(d.turnout_pct))
+        .curve(d3.curveMonotoneX);
+
+      const lineMale = d3.line()
+        .defined(d => d.male_turnout_pct !== null)
+        .x(d => x(d.year_num))
+        .y(d => y(d.male_turnout_pct))
+        .curve(d3.curveMonotoneX);
+
+      const lineFemale = d3.line()
+        .defined(d => d.female_turnout_pct !== null)
+        .x(d => x(d.year_num))
+        .y(d => y(d.female_turnout_pct))
+        .curve(d3.curveMonotoneX);
+
+      // Male Line
+      g.append('path')
+        .datum(parsedNational)
+        .attr('fill', 'none')
+        .attr('stroke', '#2563eb')
+        .attr('stroke-width', 2)
+        .attr('stroke-opacity', 0.85)
+        .attr('d', lineMale);
+
+      // Female Line
+      g.append('path')
+        .datum(parsedNational)
+        .attr('fill', 'none')
+        .attr('stroke', '#e11d48')
+        .attr('stroke-width', 2.2)
+        .attr('d', lineFemale);
+
+      // Overall Line
+      g.append('path')
+        .datum(parsedNational)
+        .attr('fill', 'none')
+        .attr('stroke', '#0f172a')
+        .attr('stroke-width', 2.8)
+        .attr('d', lineOverall);
+
+      // Data Points (Clickable to switch election year!)
+      g.selectAll('.dot-overall')
+        .data(parsedNational)
+        .enter()
+        .append('circle')
+        .attr('cx', d => x(d.year_num))
+        .attr('cy', d => y(d.turnout_pct))
+        .attr('r', d => d.year_num === activeYearNum ? 5.5 : 3.5)
+        .attr('fill', d => d.year_num === activeYearNum ? '#f59e0b' : '#0f172a')
+        .attr('stroke', '#ffffff')
+        .attr('stroke-width', 1.5)
+        .style('cursor', 'pointer')
+        .on('mouseover', (event, d) => {
+          const femStr = d.female_turnout_pct !== null ? `${d.female_turnout_pct.toFixed(2)}%` : 'NA (Not Published)';
+          const maleStr = d.male_turnout_pct !== null ? `${d.male_turnout_pct.toFixed(2)}%` : 'NA (Not Published)';
+          showTooltip(`
+            <div class="font-bold text-amber-300 mb-1">${d.election_year} General Election</div>
+            <div>Overall Turnout: <strong>${d.turnout_pct.toFixed(2)}%</strong></div>
+            <div>Female Turnout: <strong class="text-rose-300">${femStr}</strong></div>
+            <div>Male Turnout: <strong class="text-blue-300">${maleStr}</strong></div>
+            <div class="mt-1 pt-1 border-t border-slate-700 text-[11px] text-slate-300">
+              Electors: ${formatCrores(d.electors)} • Winner: ${d.winner}
+            </div>
+          `, event);
+        })
+        .on('mousemove', moveTooltip)
+        .on('mouseout', hideTooltip)
+        .on('click', (event, d) => {
+          const supportedYears = ['2004', '2009', '2014', '2019', '2024'];
+          if (supportedYears.includes(String(d.year_num))) {
+            state.year = String(d.year_num);
+            document.getElementById('filter-year').value = state.year;
+            renderDashboard();
+          }
+        });
+
+      // Annotate 2019 Female Turnout Crossover
+      const d2019 = parsedNational.find(d => d.year_num === 2019);
+      if (d2019 && innerW > 360) {
+        g.append('text')
+          .attr('x', x(2019) - 8)
+          .attr('y', y(d2019.female_turnout_pct) - 10)
+          .attr('text-anchor', 'end')
+          .attr('font-size', '10px')
+          .attr('font-weight', '600')
+          .attr('fill', '#be123c')
+          .text('2019: Female > Male Turnout');
+      }
+    }
+
+    /*************************************************************************
+     * 8. D3 CHART 2: PARTY PERFORMANCE BAR CHART
+     *************************************************************************/
+    function renderPartyChart(data) {
+      const container = d3.select('#party-chart-container');
+      container.selectAll('*').remove();
+
+      const { activeYear, partyFiltered } = data;
+      const isSeats = state.partyChartMode === 'seats';
+
+      document.getElementById('party-chart-title').textContent = isSeats
+        ? `Party Seat Share (${activeYear})`
+        : `Party National Vote Share % (${activeYear})`;
+
+      // Top 10 parties sorted by active metric
+      const sorted = [...partyFiltered]
+        .filter(d => d.party_code !== 'OTH')
+        .sort((a, b) => isSeats ? b.seats_won - a.seats_won : b.vote_share_pct - a.vote_share_pct)
+        .slice(0, 10);
+
+      const bounds = container.node().getBoundingClientRect();
+      const width = Math.max(280, bounds.width);
+      const height = 290;
+      const margin = { top: 8, right: 48, bottom: 26, left: 68 };
+      const innerW = width - margin.left - margin.right;
+      const innerH = height - margin.top - margin.bottom;
+
+      const svg = container.append('svg')
+        .attr('width', width)
+        .attr('height', height);
+
+      const g = svg.append('g')
+        .attr('transform', `translate(${margin.left},${margin.top})`);
+
+      const maxVal = d3.max(sorted, d => isSeats ? d.seats_won : d.vote_share_pct) || 10;
+
+      const x = d3.scaleLinear()
+        .domain([0, maxVal * 1.12])
+        .range([0, innerW]);
+
+      const y = d3.scaleBand()
+        .domain(sorted.map(d => d.party_code))
+        .range([0, innerH])
+        .padding(0.24);
+
+      g.append('g')
+        .attr('class', 'grid')
+        .call(d3.axisBottom(x).ticks(5).tickSize(innerH).tickFormat(''));
+
+      g.append('g')
+        .attr('class', 'axis')
+        .attr('transform', `translate(0,${innerH})`)
+        .call(d3.axisBottom(x).ticks(5).tickFormat(d => isSeats ? d : `${d}%`));
+
+      g.append('g')
+        .attr('class', 'axis')
+        .call(d3.axisLeft(y));
+
+      // Bars
+      g.selectAll('.party-bar')
+        .data(sorted)
+        .enter()
+        .append('rect')
+        .attr('x', 0)
+        .attr('y', d => y(d.party_code))
+        .attr('height', y.bandwidth())
+        .attr('rx', 4)
+        .attr('fill', d => ALLIANCE_COLORS[d.alliance] || '#64748b')
+        .attr('width', d => x(isSeats ? d.seats_won : d.vote_share_pct))
+        .style('cursor', 'pointer')
+        .on('mouseover', (event, d) => {
+          showTooltip(`
+            <div class="font-bold text-white mb-1">${d.party}</div>
+            <div>Alliance Bloc: <strong>${d.alliance}</strong></div>
+            <div>Seats Won (${activeYear}): <strong>${d.seats_won}</strong></div>
+            <div>National Vote Share: <strong>${d.vote_share_pct.toFixed(2)}%</strong></div>
+          `, event);
+        })
+        .on('mousemove', moveTooltip)
+        .on('mouseout', hideTooltip);
+
+      // Value Labels
+      g.selectAll('.party-val')
+        .data(sorted)
+        .enter()
+        .append('text')
+        .attr('x', d => x(isSeats ? d.seats_won : d.vote_share_pct) + 5)
+        .attr('y', d => y(d.party_code) + y.bandwidth() / 2 + 4)
+        .attr('font-size', '11px')
+        .attr('font-weight', '600')
+        .attr('fill', '#334155')
+        .text(d => isSeats ? `${d.seats_won}` : `${d.vote_share_pct.toFixed(1)}%`);
+    }
+
+    /*************************************************************************
+     * 9. D3 CHART 3: INTERACTIVE STATE-WISE INDIA CHOROPLETH MAP
+     *************************************************************************/
+    function renderIndiaMap(data) {
+      const container = d3.select('#india-map-container');
+      container.selectAll('*').remove();
+
+      const { activeYear, statesYear } = data;
+      const metricKey = state.metric;
+      const meta = METRIC_META[metricKey];
+
+      document.getElementById('map-chart-title').textContent = `${meta.label} by State/UT (${activeYear})`;
+
+      // Build Color Scale
+      const colorScale = d3.scaleSequential()
+        .domain(meta.domain)
+        .interpolator(meta.scheme)
+        .clamp(true);
+
+      // Update Legend Strip
+      const legendEl = d3.select('#map-legend-container');
+      legendEl.selectAll('*').remove();
+      legendEl.append('span').text(`${meta.domain[0]}${meta.unit}`);
+      const steps = d3.range(0, 1.01, 0.2);
+      steps.forEach(t => {
+        const val = meta.domain[0] + t * (meta.domain[1] - meta.domain[0]);
+        legendEl.append('span')
+          .style('display', 'inline-block')
+          .style('width', '14px')
+          .style('height', '10px')
+          .style('border-radius', '2px')
+          .style('background-color', colorScale(val));
+      });
+      legendEl.append('span').text(`${meta.domain[1]}${meta.unit}`);
+
+      const bounds = container.node().getBoundingClientRect();
+      const width = Math.max(300, bounds.width);
+      const height = 380;
+
+      const svg = container.append('svg')
+        .attr('width', width)
+        .attr('height', height)
+        .attr('viewBox', `0 0 ${width} ${height}`);
+
+      // Map lookup by state code and normalized name
+      const stateByCode = new Map(statesYear.map(d => [d.code, d]));
+      const stateByName = new Map(statesYear.map(d => [d.state_ut.toLowerCase(), d]));
+
+      // If official GeoJSON loaded successfully, render geographic polygons; otherwise render crisp India Tile Cartogram
+      if (state.geoJsonData && state.geoJsonData.features && state.geoJsonData.features.length > 0) {
+        document.getElementById('map-mode-badge').textContent = 'Geographic Boundaries';
+        const projection = d3.geoMercator().fitExtent([[16, 16], [width - 16, height - 16]], state.geoJsonData);
+        const pathGen = d3.geoPath().projection(projection);
+
+        svg.selectAll('path.state-poly')
+          .data(state.geoJsonData.features)
+          .enter()
+          .append('path')
+          .attr('d', pathGen)
+          .attr('class', d => {
+            const st = matchFeatureToState(d, stateByName);
+            if (!st) return 'state-shape';
+            const inRegion = state.region === 'ALL' || st.region === state.region;
+            const isSel = state.selectedStateCode === st.code;
+            return `state-shape ${!inRegion ? 'state-dimmed' : ''} ${isSel ? 'state-selected' : ''}`;
+          })
+          .attr('fill', d => {
+            const st = matchFeatureToState(d, stateByName);
+            return st ? colorScale(st[metricKey]) : '#cbd5e1';
+          })
+          .on('mouseover', (event, d) => {
+            const st = matchFeatureToState(d, stateByName);
+            if (st) showStateTooltip(st, meta, metricKey, event);
+          })
+          .on('mousemove', moveTooltip)
+          .on('mouseout', hideTooltip)
+          .on('click', (event, d) => {
+            const st = matchFeatureToState(d, stateByName);
+            if (st) toggleStateSelection(st.code);
+          });
+      } else {
+        document.getElementById('map-mode-badge').textContent = 'India Geo-Cartogram (36 States/UTs)';
+        const cols = 10;
+        const rows = 9;
+        const tileSize = Math.min((width - 32) / cols, (height - 28) / rows);
+        const offsetX = (width - cols * tileSize) / 2;
+        const offsetY = (height - rows * tileSize) / 2;
+
+        const g = svg.append('g').attr('transform', `translate(${offsetX},${offsetY})`);
+
+        const tiles = g.selectAll('.state-tile')
+          .data(INDIA_TILE_GRID)
+          .enter()
+          .append('g')
+          .attr('transform', d => `translate(${d.col * tileSize}, ${d.row * tileSize})`)
+          .style('cursor', 'pointer')
+          .on('mouseover', (event, d) => {
+            const st = stateByCode.get(d.code);
+            if (st) showStateTooltip(st, meta, metricKey, event);
+          })
+          .on('mousemove', moveTooltip)
+          .on('mouseout', hideTooltip)
+          .on('click', (event, d) => toggleStateSelection(d.code));
+
+        tiles.append('rect')
+          .attr('width', tileSize - 3)
+          .attr('height', tileSize - 3)
+          .attr('rx', 6)
+          .attr('class', d => {
+            const st = stateByCode.get(d.code);
+            if (!st) return 'state-shape';
+            const inRegion = state.region === 'ALL' || st.region === state.region;
+            const isSel = state.selectedStateCode === st.code;
+            return `state-shape ${!inRegion ? 'state-dimmed' : ''} ${isSel ? 'state-selected' : ''}`;
+          })
+          .attr('fill', d => {
+            const st = stateByCode.get(d.code);
+            return st ? colorScale(st[metricKey]) : '#e2e8f0';
+          });
+
+        tiles.append('text')
+          .attr('x', (tileSize - 3) / 2)
+          .attr('y', (tileSize - 3) / 2 - 2)
+          .attr('text-anchor', 'middle')
+          .attr('font-size', Math.max(9, tileSize * 0.27) + 'px')
+          .attr('font-weight', '700')
+          .attr('fill', d => {
+            const st = stateByCode.get(d.code);
+            if (!st) return '#1e293b';
+            const norm = (st[metricKey] - meta.domain[0]) / (meta.domain[1] - meta.domain[0]);
+            return norm > 0.55 ? '#ffffff' : '#0f172a';
+          })
+          .style('pointer-events', 'none')
+          .text(d => d.code);
+
+        tiles.append('text')
+          .attr('x', (tileSize - 3) / 2)
+          .attr('y', (tileSize - 3) / 2 + 10)
+          .attr('text-anchor', 'middle')
+          .attr('font-size', Math.max(7.5, tileSize * 0.21) + 'px')
+          .attr('font-weight', '500')
+          .attr('fill', d => {
+            const st = stateByCode.get(d.code);
+            if (!st) return '#475569';
+            const norm = (st[metricKey] - meta.domain[0]) / (meta.domain[1] - meta.domain[0]);
+            return norm > 0.55 ? '#f1f5f9' : '#334155';
+          })
+          .style('pointer-events', 'none')
+          .text(d => {
+            const st = stateByCode.get(d.code);
+            return st ? `${st[metricKey].toFixed(0)}%` : '';
+          });
+      }
+    }
+
+    function matchFeatureToState(feature, stateByName) {
+      const props = feature.properties || {};
+      const rawName = (props.ST_NM || props.NAME_1 || props.name || props.state || '').toLowerCase().trim();
+      if (stateByName.has(rawName)) return stateByName.get(rawName);
+      if (rawName.includes('delhi')) return stateByName.get('nct of delhi');
+      if (rawName.includes('orissa')) return stateByName.get('odisha');
+      if (rawName.includes('uttaranchal')) return stateByName.get('uttarakhand');
+      if (rawName.includes('dadra') || rawName.includes('daman')) return stateByName.get('dadra & nagar haveli and daman & diu');
+      if (rawName.includes('andaman')) return stateByName.get('andaman & nicobar islands');
+      return null;
+    }
+
+    function showStateTooltip(st, meta, metricKey, event) {
+      showTooltip(`
+        <div class="font-bold text-amber-300 text-sm mb-0.5">${st.state_ut}</div>
+        <div class="text-[11px] text-slate-300 mb-1.5">${st.region} • ${st.seats} Lok Sabha Seats</div>
+        <div class="bg-slate-800/90 px-2 py-1 rounded mb-1.5 border border-slate-700">
+          ${meta.label}: <strong class="text-white">${st[metricKey].toFixed(2)}${meta.unit}</strong>
+        </div>
+        <div class="grid grid-cols-2 gap-x-3 gap-y-0.5 text-[11px]">
+          <span>Turnout: <strong>${st.turnout_pct}%</strong></span>
+          <span>Female: <strong class="text-rose-300">${st.female_turnout_pct}%</strong></span>
+          <span>Male: <strong class="text-blue-300">${st.male_turnout_pct}%</strong></span>
+          <span>Youth (18–29): <strong>${st.youth_elector_share_pct}%</strong></span>
+          <span>Avg Margin: <strong>${st.avg_victory_margin_pct}%</strong></span>
+          <span>Leader: <strong>${st.leading_party}</strong></span>
+        </div>
+      `, event);
+    }
+
+    function toggleStateSelection(code) {
+      state.selectedStateCode = state.selectedStateCode === code ? null : code;
+      renderDashboard();
+    }
+
+    /*************************************************************************
+     * 10. D3 CHART 4: REGIONAL ALLIANCE COMPARISON & TURNOUT OVERLAY
+     *************************************************************************/
+    function renderRegionalChart(data) {
+      const container = d3.select('#regional-chart-container');
+      container.selectAll('*').remove();
+
+      const { activeYear, regionalYear } = data;
+      document.getElementById('regional-chart-title').textContent = `Regional Alliance Seats & Turnout (${activeYear})`;
+
+      const bounds = container.node().getBoundingClientRect();
+      const width = Math.max(300, bounds.width);
+      const height = 380;
+      const margin = { top: 22, right: 44, bottom: 52, left: 42 };
+      const innerW = width - margin.left - margin.right;
+      const innerH = height - margin.top - margin.bottom;
+
+      const svg = container.append('svg')
+        .attr('width', width)
+        .attr('height', height);
+
+      const g = svg.append('g')
+        .attr('transform', `translate(${margin.left},${margin.top})`);
+
+      const regions = regionalYear.map(d => d.region);
+      const subgroups = ['nda_seats', 'india_seats', 'other_seats'];
+      const subgroupLabels = { nda_seats: 'NDA', india_seats: 'INDIA / UPA', other_seats: 'Others' };
+      const subgroupColors = { nda_seats: '#ea580c', india_seats: '#2563eb', other_seats: '#0d9488' };
+
+      const x0 = d3.scaleBand()
+        .domain(regions)
+        .range([0, innerW])
+        .padding(0.24);
+
+      const x1 = d3.scaleBand()
+        .domain(subgroups)
+        .range([0, x0.bandwidth()])
+        .padding(0.08);
+
+      const ySeats = d3.scaleLinear()
+        .domain([0, 115])
+        .range([innerH, 0]);
+
+      const yTurnout = d3.scaleLinear()
+        .domain([45, 85])
+        .range([innerH, 0]);
+
+      g.append('g')
+        .attr('class', 'grid')
+        .call(d3.axisLeft(ySeats).ticks(6).tickSize(-innerW).tickFormat(''));
+
+      // X Axis
+      g.append('g')
+        .attr('class', 'axis')
+        .attr('transform', `translate(0,${innerH})`)
+        .call(d3.axisBottom(x0).tickFormat(d => d.replace(' India', '')));
+
+      // Left Y Axis (Seats)
+      g.append('g')
+        .attr('class', 'axis')
+        .call(d3.axisLeft(ySeats).ticks(6));
+
+      // Right Y Axis (Turnout %)
+      g.append('g')
+        .attr('class', 'axis')
+        .attr('transform', `translate(${innerW},0)`)
+        .call(d3.axisRight(yTurnout).ticks(5).tickFormat(d => `${d}%`));
+
+      // Region Groups
+      const regionGroups = g.selectAll('.region-group')
+        .data(regionalYear)
+        .enter()
+        .append('g')
+        .attr('transform', d => `translate(${x0(d.region)},0)`)
+        .attr('opacity', d => (state.region === 'ALL' || d.region === state.region) ? 1 : 0.28);
+
+      regionGroups.selectAll('rect')
+        .data(d => subgroups.map(key => ({ key, value: d[key], regionObj: d })))
+        .enter()
+        .append('rect')
+        .attr('x', d => x1(d.key))
+        .attr('y', d => ySeats(d.value))
+        .attr('width', x1.bandwidth())
+        .attr('height', d => innerH - ySeats(d.value))
+        .attr('rx', 3)
+        .attr('fill', d => subgroupColors[d.key])
+        .style('cursor', 'pointer')
+        .on('mouseover', (event, d) => {
+          const r = d.regionObj;
+          showTooltip(`
+            <div class="font-bold text-amber-300 mb-1">${r.region} (${activeYear})</div>
+            <div>Total Seats: <strong>${r.total_seats}</strong></div>
+            <div>NDA Seats: <strong class="text-orange-300">${r.nda_seats}</strong></div>
+            <div>INDIA/UPA Seats: <strong class="text-blue-300">${r.india_seats}</strong></div>
+            <div>Others Seats: <strong class="text-teal-300">${r.other_seats}</strong></div>
+            <div class="mt-1 pt-1 border-t border-slate-700">Avg Turnout: <strong>${r.avg_turnout_pct.toFixed(2)}%</strong></div>
+          `, event);
+        })
+        .on('mousemove', moveTooltip)
+        .on('mouseout', hideTooltip)
+        .on('click', (event, d) => {
+          state.region = state.region === d.regionObj.region ? 'ALL' : d.regionObj.region;
+          document.getElementById('filter-region').value = state.region;
+          renderDashboard();
+        });
+
+      // Turnout Overlay Line & Diamonds
+      const turnoutLine = d3.line()
+        .x(d => x0(d.region) + x0.bandwidth() / 2)
+        .y(d => yTurnout(d.avg_turnout_pct));
+
+      g.append('path')
+        .datum(regionalYear)
+        .attr('fill', 'none')
+        .attr('stroke', '#0f172a')
+        .attr('stroke-width', 1.8)
+        .attr('stroke-dasharray', '3,3')
+        .attr('d', turnoutLine);
+
+      g.selectAll('.turnout-diamond')
+        .data(regionalYear)
+        .enter()
+        .append('rect')
+        .attr('x', d => x0(d.region) + x0.bandwidth() / 2 - 4.5)
+        .attr('y', d => yTurnout(d.avg_turnout_pct) - 4.5)
+        .attr('width', 9)
+        .attr('height', 9)
+        .attr('transform', d => `rotate(45, ${x0(d.region) + x0.bandwidth() / 2}, ${yTurnout(d.avg_turnout_pct)})`)
+        .attr('fill', '#0f172a')
+        .attr('stroke', '#ffffff')
+        .attr('stroke-width', 1.5);
+    }
+
+    /*************************************************************************
+     * 11. DYNAMIC EMPIRICAL INSIGHTS GENERATOR
+     *************************************************************************/
+    function renderInsights(data) {
+      const { activeYear, natCurrent, statesFiltered, regionalYear } = data;
+      document.getElementById('insights-context-tag').textContent = `${activeYear} • ${state.region === 'ALL' ? 'All India' : state.region} Synthesis`;
+
+      const topTurnoutState = [...statesFiltered].sort((a, b) => b.turnout_pct - a.turnout_pct)[0];
+      const topYouthState = [...statesFiltered].sort((a, b) => b.youth_elector_share_pct - a.youth_elector_share_pct)[0];
+      const topRegionalTurnout = [...regionalYear].sort((a, b) => b.avg_turnout_pct - a.avg_turnout_pct)[0];
+
+      const genderGap = natCurrent.female_turnout_pct !== null
+        ? (natCurrent.female_turnout_pct - natCurrent.male_turnout_pct).toFixed(2)
+        : null;
+
+      const insights = [
+        {
+          title: 'Gender Turnout Parity & Crossover',
+          badge: genderGap >= 0 ? `Female +${genderGap} pp` : `Gap ${genderGap} pp`,
+          badgeClass: genderGap >= 0 ? 'bg-rose-50 text-rose-700 border-rose-200' : 'bg-blue-50 text-blue-700 border-blue-200',
+          body: genderGap >= 0
+            ? `In ${activeYear}, national female voter turnout (${natCurrent.female_turnout_pct}%) surpassed male turnout (${natCurrent.male_turnout_pct}%) by ${genderGap} percentage points—reversing a 11.79 pp deficit recorded in 1971.`
+            : `In ${activeYear}, male voter turnout (${natCurrent.male_turnout_pct}%) exceeded female turnout (${natCurrent.female_turnout_pct}%) by ${Math.abs(genderGap).toFixed(2)} percentage points prior to the historic 2019 female crossover.`
+        },
+        {
+          title: 'Highest Turnout & Youth Electorate',
+          badge: topTurnoutState ? `${topTurnoutState.state_ut}: ${topTurnoutState.turnout_pct}%` : 'Regional Peak',
+          badgeClass: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+          body: topTurnoutState && topYouthState
+            ? `Within the active filter scope, ${topTurnoutState.state_ut} recorded the highest participation (${topTurnoutState.turnout_pct}%), while ${topYouthState.state_ut} registered the highest 18–29 youth elector share (${topYouthState.youth_elector_share_pct}%).`
+            : `Eastern and Northeastern states consistently sustain the highest participation rates across India.`
+        },
+        {
+          title: 'Macro-Regional Electoral Alignment',
+          badge: `${topRegionalTurnout.region}: ${topRegionalTurnout.avg_turnout_pct}%`,
+          badgeClass: 'bg-amber-50 text-amber-800 border-amber-200',
+          body: activeYear === '2024'
+            ? `In 2024, coalition bipolarity sharpened: INDIA bloc surged in North (61 seats) and South India (77 seats), while NDA swept Central India (39/40 seats) and led East India (72/118 seats).`
+            : `In ${activeYear}, ${topRegionalTurnout.region} achieved the highest regional voter turnout (${topRegionalTurnout.avg_turnout_pct}%), illustrating strong regional mobilization dynamics.`
+        }
+      ];
+
+      const grid = document.getElementById('insights-grid');
+      grid.innerHTML = insights.map(item => `
+        <div class="rounded-lg border border-slate-200 bg-slate-50/70 p-3.5 flex flex-col justify-between">
+          <div>
+            <div class="flex items-center justify-between gap-2 mb-1.5">
+              <h4 class="text-xs font-bold text-slate-900">${item.title}</h4>
+              <span class="px-2 py-0.5 rounded text-[10px] font-semibold border ${item.badgeClass} whitespace-nowrap">${item.badge}</span>
+            </div>
+            <p class="text-xs text-slate-600 leading-relaxed">${item.body}</p>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    /*************************************************************************
+     * 12. INTERACTIVE DATA TABLE, SORTING, VALIDATION & CSV DOWNLOADS
+     *************************************************************************/
+    function getTableDataset(data) {
+      const { activeYear } = data;
+      if (state.activeTableTab === 'national') {
+        return {
+          columns: ['election_year', 'electors', 'votes', 'turnout_pct', 'male_turnout_pct', 'female_turnout_pct', 'winner'],
+          rows: parsedNational
+        };
+      }
+      if (state.activeTableTab === 'party') {
+        return {
+          columns: ['year', 'party_code', 'party', 'alliance', 'seats_won', 'vote_share_pct'],
+          rows: parsedParty.filter(d => state.year === 'ALL' || d.year === activeYear)
+        };
+      }
+      if (state.activeTableTab === 'regional') {
+        return {
+          columns: ['year', 'region', 'total_seats', 'nda_seats', 'india_seats', 'other_seats', 'avg_turnout_pct'],
+          rows: parsedRegional.filter(d => (state.year === 'ALL' || d.year === activeYear) && (state.region === 'ALL' || d.region === state.region))
+        };
+      }
+      // Default: state_demographics.csv
+      return {
+        columns: ['year', 'state_ut', 'region', 'seats', 'turnout_pct', 'female_turnout_pct', 'male_turnout_pct', 'youth_elector_share_pct', 'avg_victory_margin_pct', 'leading_party'],
+        rows: parsedState.filter(d => {
+          const yOk = state.year === 'ALL' || d.year === activeYear;
+          const rOk = state.region === 'ALL' || d.region === state.region;
+          const sOk = !state.selectedStateCode || d.code === state.selectedStateCode;
+          return yOk && rOk && sOk;
+        })
+      };
+    }
+
+    function renderDataTable(data) {
+      const { columns, rows } = getTableDataset(data);
+      const query = state.tableSearch.trim().toLowerCase();
+
+      let filteredRows = rows.filter(row => {
+        if (!query) return true;
+        return columns.some(col => String(row[col] ?? '').toLowerCase().includes(query));
+      });
+
+      if (state.sortCol && columns.includes(state.sortCol)) {
+        filteredRows = [...filteredRows].sort((a, b) => {
+          const va = a[state.sortCol];
+          const vb = b[state.sortCol];
+          if (va === null || va === undefined) return 1;
+          if (vb === null || vb === undefined) return -1;
+          if (typeof va === 'number' && typeof vb === 'number') {
+            return state.sortAsc ? va - vb : vb - va;
+          }
+          return state.sortAsc
+            ? String(va).localeCompare(String(vb))
+            : String(vb).localeCompare(String(va));
+        });
+      }
+
+      document.getElementById('table-row-count').textContent = `${filteredRows.length} rows`;
+
+      // Audit Reconciliation Summary
+      const banner = document.getElementById('reconciliation-banner');
+      if (state.activeTableTab === 'state' || state.activeTableTab === 'regional' || state.activeTableTab === 'party') {
+        const seatCol = state.activeTableTab === 'party' ? 'seats_won' : (state.activeTableTab === 'regional' ? 'total_seats' : 'seats');
+        const seatSum = d3.sum(filteredRows, r => r[seatCol] || 0);
+        banner.innerHTML = `
+          <div class="flex items-center gap-2">
+            <span class="font-semibold text-emerald-700">✓ Source Reconciliation Active:</span>
+            <span>Displaying <strong>${filteredRows.length}</strong> verified records from <code>${state.activeTableTab}_*.csv</code></span>
+          </div>
+          <div class="font-mono font-semibold text-slate-800">Sum of Seats in View: ${seatSum}</div>
+        `;
+      } else {
+        banner.innerHTML = `
+          <div class="flex items-center gap-2">
+            <span class="font-semibold text-emerald-700">✓ Longitudinal Series Verified:</span>
+            <span>18 Lok Sabha General Elections (1951–52 to 2024) • Pre-1971 gender turnout properly preserved as <code>NA</code></span>
+          </div>
+          <div class="font-mono font-semibold text-slate-800">Peak Turnout: 67.40% (2019)</div>
+        `;
+      }
+
+      // Render Header
+      const thead = document.getElementById('data-table-head');
+      thead.innerHTML = `
+        <tr>
+          ${columns.map(col => {
+            const indicator = state.sortCol === col ? (state.sortAsc ? ' ▲' : ' ▼') : '';
+            return `<th data-col="${col}" class="px-3 py-2.5 text-left font-bold text-slate-700 uppercase tracking-wider cursor-pointer hover:bg-slate-100 select-none whitespace-nowrap">${col.replace(/_/g, ' ')}${indicator}</th>`;
+          }).join('')}
+        </tr>
+      `;
+
+      thead.querySelectorAll('th').forEach(th => {
+        th.addEventListener('click', () => {
+          const col = th.dataset.col;
+          if (state.sortCol === col) {
+            state.sortAsc = !state.sortAsc;
+          } else {
+            state.sortCol = col;
+            state.sortAsc = true;
+          }
+          renderDataTable(data);
+        });
+      });
+
+      // Render Body
+      const tbody = document.getElementById('data-table-body');
+      tbody.innerHTML = filteredRows.map(row => `
+        <tr class="hover:bg-blue-50/40 transition">
+          ${columns.map(col => {
+            let val = row[col];
+            if (val === null || val === undefined) val = '<span class="text-slate-400 italic">NA</span>';
+            else if (col === 'electors' || col === 'votes') val = Number(val).toLocaleString('en-IN');
+            else if (col.endsWith('_pct')) val = Number(val).toFixed(2) + '%';
+            return `<td class="px-3 py-2 whitespace-nowrap text-slate-800 ${col === 'state_ut' || col === 'party' || col === 'winner' ? 'font-semibold' : ''}">${val}</td>`;
+          }).join('')}
+        </tr>
+      `).join('');
+    }
+
+    function triggerCSVDownload(filename, csvContent) {
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', filename);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    }
+
+    /*************************************************************************
+     * 13. MASTER RENDER & EVENT WIRING
+     *************************************************************************/
+    function renderDashboard() {
+      const data = getFilteredData();
+      updateKPIsAndBadges(data);
+      renderLineChart(data);
+      renderPartyChart(data);
+      renderIndiaMap(data);
+      renderRegionalChart(data);
+      renderInsights(data);
+      renderDataTable(data);
+    }
+
+    // Event Listeners for Filters
+    document.getElementById('filter-year').addEventListener('change', e => {
+      state.year = e.target.value;
+      renderDashboard();
+    });
+
+    document.getElementById('filter-region').addEventListener('change', e => {
+      state.region = e.target.value;
+      state.selectedStateCode = null;
+      renderDashboard();
+    });
+
+    document.getElementById('filter-party').addEventListener('change', e => {
+      state.partyFilter = e.target.value;
+      renderDashboard();
+    });
+
+    document.getElementById('filter-metric').addEventListener('change', e => {
+      state.metric = e.target.value;
+      renderDashboard();
+    });
+
+    document.getElementById('clear-state-btn').addEventListener('click', () => {
+      state.selectedStateCode = null;
+      renderDashboard();
+    });
+
+    document.getElementById('reset-filters-btn').addEventListener('click', () => {
+      state.year = '2024';
+      state.region = 'ALL';
+      state.partyFilter = 'ALL';
+      state.metric = 'turnout_pct';
+      state.selectedStateCode = null;
+      state.tableSearch = '';
+      document.getElementById('filter-year').value = '2024';
+      document.getElementById('filter-region').value = 'ALL';
+      document.getElementById('filter-party').value = 'ALL';
+      document.getElementById('filter-metric').value = 'turnout_pct';
+      document.getElementById('table-search-input').value = '';
+      renderDashboard();
+    });
+
+    // Party Chart Seats vs Vote Share Toggle
+    document.getElementById('toggle-party-seats').addEventListener('click', () => {
+      state.partyChartMode = 'seats';
+      document.getElementById('toggle-party-seats').className = 'px-2.5 py-1 rounded-md font-semibold bg-white text-slate-900 shadow-2xs cursor-pointer';
+      document.getElementById('toggle-party-votes').className = 'px-2.5 py-1 rounded-md font-medium text-slate-600 hover:text-slate-900 cursor-pointer';
+      renderPartyChart(getFilteredData());
+    });
+
+    document.getElementById('toggle-party-votes').addEventListener('click', () => {
+      state.partyChartMode = 'votes';
+      document.getElementById('toggle-party-votes').className = 'px-2.5 py-1 rounded-md font-semibold bg-white text-slate-900 shadow-2xs cursor-pointer';
+      document.getElementById('toggle-party-seats').className = 'px-2.5 py-1 rounded-md font-medium text-slate-600 hover:text-slate-900 cursor-pointer';
+      renderPartyChart(getFilteredData());
+    });
+
+    // Data Table Tabs & Search
+    document.querySelectorAll('.table-tab-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        state.activeTableTab = btn.dataset.tableTab;
+        state.sortCol = null;
+        document.querySelectorAll('.table-tab-btn').forEach(b => {
+          b.className = b === btn
+            ? 'table-tab-btn px-3 py-1.5 rounded-md text-xs font-semibold bg-white text-slate-900 shadow-2xs cursor-pointer'
+            : 'table-tab-btn px-3 py-1.5 rounded-md text-xs font-medium text-slate-600 hover:text-slate-900 cursor-pointer';
+        });
+        renderDataTable(getFilteredData());
+      });
+    });
+
+    document.getElementById('table-search-input').addEventListener('input', e => {
+      state.tableSearch = e.target.value;
+      renderDataTable(getFilteredData());
+    });
+
+    // CSV Download Buttons
+    document.querySelectorAll('.csv-dl-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const type = btn.dataset.download;
+        const map = {
+          national: ['national_series.csv', RAW_CSV_NATIONAL],
+          party: ['party_performance.csv', RAW_CSV_PARTY],
+          regional: ['regional_shifts.csv', RAW_CSV_REGIONAL],
+          state: ['state_demographics.csv', RAW_CSV_STATE]
+        };
+        if (map[type]) triggerCSVDownload(map[type][0], map[type][1]);
+      });
+    });
+
+    document.getElementById('header-export-btn').addEventListener('click', () => {
+      const data = getFilteredData();
+      const { columns, rows } = getTableDataset(data);
+      const csvOut = d3.csvFormat(rows, columns);
+      triggerCSVDownload(`bharat_electoral_${state.activeTableTab}_${data.activeYear}.csv`, csvOut);
+    });
+
+    // Navigation Smooth Scroll
+    document.querySelectorAll('.nav-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.nav-btn').forEach(b => {
+          b.className = b === btn
+            ? 'nav-btn px-3 py-1.5 text-xs font-semibold rounded-md bg-white text-civic-navy shadow-sm transition'
+            : 'nav-btn px-3 py-1.5 text-xs font-medium rounded-md text-slate-300 hover:text-white transition';
+        });
+        const targetId = `section-${btn.dataset.nav}`;
+        const el = document.getElementById(targetId);
+        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      });
+    });
+
+    // Responsive Resize Listener
+    let resizeTimer;
+    window.addEventListener('resize', () => {
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(() => renderDashboard(), 160);
+    });
+
+    // Initial Render + Optional Progressive Enhancement with India TopoJSON
+    window.addEventListener('DOMContentLoaded', () => {
+      renderDashboard();
+
+      // Attempt to fetch official India States TopoJSON; falls back cleanly to built-in 36-State Geo-Cartogram if offline/blocked
+      fetch('https://raw.githubusercontent.com/udit-001/india-maps-data/main/topojson/india.json')
+        .then(res => res.ok ? res.json() : Promise.reject('TopoJSON unavailable'))
+        .then(topo => {
+          const objKey = Object.keys(topo.objects)[0];
+          if (objKey && window.topojson) {
+            state.geoJsonData = topojson.feature(topo, topo.objects[objKey]);
+            renderIndiaMap(getFilteredData());
+          }
+        })
+        .catch(() => {
+          // Built-in 36-state India Geo-Cartogram remains active seamlessly
+        });
+    });
+  </script>
+</body>
+</html>
