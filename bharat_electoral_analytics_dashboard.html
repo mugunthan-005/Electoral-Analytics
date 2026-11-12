@@ -5,10 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Bharat Electoral Analytics — Lok Sabha & Voter Behaviour Observatory</title>
 
-  <!-- Google Fonts: Inter & JetBrains Mono for tabular numbers -->
+  <!-- Google Fonts: Lora (Editorial Serif), Plus Jakarta Sans & JetBrains Mono -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,500;0,600;0,700;1,400&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
 
   <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
@@ -22,18 +22,31 @@
       theme: {
         extend: {
           fontFamily: {
-            sans: ['Inter', 'system-ui', 'sans-serif'],
+            serif: ['Lora', 'Georgia', 'serif'],
+            sans: ['Plus Jakarta Sans', 'system-ui', 'sans-serif'],
             mono: ['JetBrains Mono', 'monospace'],
           },
           colors: {
+            paper: {
+              DEFAULT: '#fbfaf7',
+              muted: '#f4f1ea',
+              border: '#e6e2d8'
+            },
+            ink: {
+              900: '#15191e',
+              800: '#232931',
+              700: '#39414d',
+              500: '#647082',
+              400: '#8e9aa8'
+            },
             civic: {
-              navy: '#0f172a',
-              slate: '#1e293b',
-              bg: '#f8fafc',
-              border: '#e2e8f0',
-              nda: '#ea580c',      // Saffron / Orange
-              india: '#2563eb',    // Royal Blue
-              unaligned: '#0d9488' // Teal
+              navy: '#181c24',
+              slate: '#242e3d',
+              bg: '#f7f6f2',
+              border: '#e5e1d7',
+              nda: '#c2410c',      // Terracotta Saffron
+              india: '#1e40af',    // Deep Parliamentary Navy
+              unaligned: '#0f766e' // Sage Teal
             }
           }
         }
@@ -42,89 +55,93 @@
   </script>
 
   <style>
-    /* Custom civic-data journalism styling & D3 chart transitions */
+    /* Handcrafted broadsheet & civic-data journalism styling */
     body {
-      background-color: #f8fafc;
-      color: #0f172a;
+      background-color: #f7f6f2; /* Warm newsprint tone */
+      color: #15191e;
+      font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
       font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+      -webkit-font-smoothing: antialiased;
+    }
+    .font-serif {
+      font-family: 'Lora', Georgia, serif;
     }
     .tabular-nums {
       font-variant-numeric: tabular-nums;
     }
     .chart-card {
       background: #ffffff;
-      border: 1px solid #e2e8f0;
-      border-radius: 0.75rem;
-      box-shadow: 0 1px 3px 0 rgba(15, 23, 42, 0.04), 0 1px 2px -1px rgba(15, 23, 42, 0.03);
-      transition: box-shadow 0.2s ease;
+      border: 1px solid #e5e1d7;
+      border-radius: 0.5rem;
+      box-shadow: 0 1px 2px rgba(18, 24, 38, 0.04);
+      transition: border-color 0.15s ease;
     }
     .chart-card:hover {
-      box-shadow: 0 4px 12px -2px rgba(15, 23, 42, 0.07);
+      border-color: #d5d0c4;
     }
     .d3-tooltip {
       position: fixed;
       pointer-events: none;
       z-index: 9999;
-      background: rgba(15, 23, 42, 0.96);
-      color: #f8fafc;
-      border: 1px solid #334155;
-      border-radius: 0.5rem;
-      padding: 0.65rem 0.85rem;
-      font-size: 0.78rem;
-      line-height: 1.4;
-      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);
-      backdrop-filter: blur(6px);
-      max-width: 280px;
+      background: #181c24;
+      color: #fbfaf7;
+      border: 1px solid #333d4b;
+      border-radius: 0.375rem;
+      padding: 0.5rem 0.75rem;
+      font-size: 0.75rem;
+      line-height: 1.35;
+      box-shadow: 0 8px 20px -3px rgba(0, 0, 0, 0.35);
+      max-width: 260px;
       opacity: 0;
       transition: opacity 0.12s ease;
     }
     .state-shape {
       stroke: #ffffff;
-      stroke-width: 0.9px;
+      stroke-width: 0.75px;
       cursor: pointer;
-      transition: opacity 0.2s ease, stroke-width 0.15s ease;
+      transition: opacity 0.18s ease, stroke-width 0.15s ease;
     }
     .state-shape:hover {
-      stroke: #0f172a;
-      stroke-width: 1.8px;
+      stroke: #15191e;
+      stroke-width: 1.6px;
     }
     .state-dimmed {
       opacity: 0.22;
     }
     .state-selected {
-      stroke: #0f172a;
-      stroke-width: 2.2px;
+      stroke: #15191e;
+      stroke-width: 2px;
     }
     .axis text {
-      fill: #475569;
-      font-size: 11px;
-      font-family: 'Inter', sans-serif;
+      fill: #596577;
+      font-size: 10px;
+      font-family: 'Plus Jakarta Sans', sans-serif;
     }
     .axis path,
     .axis line {
-      stroke: #cbd5e1;
+      stroke: #d8d3c7;
     }
     .grid line {
-      stroke: #f1f5f9;
-      stroke-dasharray: 3,3;
+      stroke: #eeece5;
+      stroke-dasharray: 2,2;
     }
     .grid path {
       stroke-width: 0;
     }
-    /* Custom scrollbar for data table */
+    /* Compact scrollbar */
     ::-webkit-scrollbar {
-      width: 6px;
-      height: 6px;
+      width: 5px;
+      height: 5px;
     }
     ::-webkit-scrollbar-track {
-      background: #f1f5f9;
+      background: #f7f6f2;
     }
     ::-webkit-scrollbar-thumb {
-      background: #cbd5e1;
-      border-radius: 3px;
+      background: #d8d3c7;
+      border-radius: 2.5px;
     }
     ::-webkit-scrollbar-thumb:hover {
-      background: #94a3b8;
+      background: #b5af9f;
     }
   </style>
 </head>
@@ -134,57 +151,50 @@
   <div id="global-tooltip" class="d3-tooltip" role="tooltip"></div>
 
   <!-- ===================================================================== -->
-  <!-- 1. HEADER & NAVIGATION BAR                                            -->
+  <!-- 1. HEADER & EDITORIAL MASTHEAD                                        -->
   <!-- ===================================================================== -->
-  <header class="bg-civic-navy text-white border-b border-slate-800 sticky top-0 z-40">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-      <div class="flex flex-col md:flex-row md:items-center md:justify-between py-3.5 gap-3">
-        <!-- Brand Logo & Title -->
-        <div class="flex items-center gap-3">
-          <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-orange-500 via-white to-emerald-600 p-0.5 flex-shrink-0 shadow-md">
-            <div class="w-full h-full bg-civic-navy rounded-[10px] flex items-center justify-center">
-              <!-- Custom Ashoka Chakra / Ballot Bar Emblem SVG -->
-              <svg class="w-6 h-6 text-amber-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-                <circle cx="12" cy="12" r="9" />
-                <circle cx="12" cy="12" r="2.2" fill="currentColor" />
-                <path d="M12 3v18M3 12h18M5.64 5.64l12.72 12.72M18.36 5.64L5.64 18.36" stroke-linecap="round" />
-              </svg>
-            </div>
+  <header class="bg-[#181c24] text-stone-100 border-b border-stone-800 border-t-2 border-t-amber-600 sticky top-0 z-40">
+    <div class="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
+      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between py-2 sm:py-2.5 gap-2">
+        <!-- Broadsheet Masthead Title -->
+        <div class="flex items-center gap-2.5">
+          <div class="w-7 h-7 sm:w-8 sm:h-8 rounded bg-stone-800 border border-stone-700 flex items-center justify-center flex-shrink-0 text-amber-500 font-serif font-bold text-xs">
+            ECI
           </div>
           <div>
-            <div class="flex items-center gap-2">
-              <h1 class="text-base sm:text-lg font-bold tracking-tight text-white">
-                Bharat Electoral Analytics
+            <div class="flex items-center gap-1.5">
+              <h1 class="text-sm sm:text-base font-serif font-bold tracking-tight text-stone-50">
+                Bharat Electoral Observatory
               </h1>
-              <span class="hidden sm:inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wider bg-slate-800 text-amber-300 border border-slate-700">
-                ECI Statistical Observatory
+              <span class="inline-flex items-center px-1.5 py-0.2 rounded text-[9px] font-semibold uppercase tracking-wider bg-stone-800 text-stone-300 border border-stone-700">
+                1951–2024
               </span>
             </div>
-            <p class="text-xs text-slate-400">
-              Lok Sabha General Elections &amp; Longitudinal Voter Behaviour (1951–2024)
+            <p class="text-[10px] sm:text-[11px] text-stone-400 font-sans leading-tight">
+              Lok Sabha General Elections &amp; Longitudinal Voter Behaviour
             </p>
           </div>
         </div>
 
         <!-- Navigation Tabs & Quick CSV Export -->
-        <div class="flex flex-wrap items-center justify-between md:justify-end gap-2">
-          <nav class="flex bg-slate-800/90 p-1 rounded-lg border border-slate-700/80" aria-label="Dashboard Sections">
-            <button data-nav="overview" class="nav-btn px-3 py-1.5 text-xs font-semibold rounded-md bg-white text-civic-navy shadow-sm transition">
+        <div class="flex items-center justify-between sm:justify-end gap-1.5 overflow-x-auto pb-0.5 sm:pb-0">
+          <nav class="flex bg-stone-800/90 p-0.5 rounded border border-stone-700/70" aria-label="Dashboard Sections">
+            <button data-nav="overview" class="nav-btn px-2.5 py-1 text-[11px] font-semibold rounded bg-stone-100 text-stone-900 shadow-2xs transition">
               Overview
             </button>
-            <button data-nav="regional" class="nav-btn px-3 py-1.5 text-xs font-medium rounded-md text-slate-300 hover:text-white transition">
+            <button data-nav="regional" class="nav-btn px-2.5 py-1 text-[11px] font-medium rounded text-stone-300 hover:text-white transition">
               Regional &amp; Map
             </button>
-            <button data-nav="explorer" class="nav-btn px-3 py-1.5 text-xs font-medium rounded-md text-slate-300 hover:text-white transition">
-              Data Explorer &amp; Validation
+            <button data-nav="explorer" class="nav-btn px-2.5 py-1 text-[11px] font-medium rounded text-stone-300 hover:text-white transition">
+              Data Explorer
             </button>
           </nav>
 
-          <button id="header-export-btn" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-emerald-600 hover:bg-emerald-500 text-white shadow-sm transition cursor-pointer">
-            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <button id="header-export-btn" class="inline-flex items-center gap-1 px-2.5 py-1 rounded text-[11px] font-semibold bg-stone-800 hover:bg-stone-700 text-stone-200 border border-stone-700 transition cursor-pointer whitespace-nowrap">
+            <svg class="w-3 h-3 text-stone-400" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5m0 0l5-5m-5 5V3" />
             </svg>
-            <span>Export Filtered CSV</span>
+            <span>Export CSV</span>
           </button>
         </div>
       </div>
@@ -194,31 +204,32 @@
   <!-- ===================================================================== -->
   <!-- 2. GLOBAL SYNCHRONIZED FILTER PANEL                                   -->
   <!-- ===================================================================== -->
-  <section class="bg-white border-b border-slate-200 shadow-xs">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5">
-      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 items-end">
+  <section class="bg-white border-b border-stone-200">
+    <div class="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-2.5 sm:py-3">
+      <!-- 2-col on mobile, 3-col on tablet, 5-col on desktop -->
+      <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 sm:gap-3 items-end">
         <!-- Election Year Selector -->
         <div>
-          <label for="filter-year" class="block text-[11px] font-semibold uppercase tracking-wider text-slate-500 mb-1">
+          <label for="filter-year" class="block text-[10px] font-bold uppercase tracking-wider text-stone-500 mb-0.5">
             Election Year
           </label>
-          <select id="filter-year" class="w-full rounded-lg border border-slate-300 bg-slate-50 px-3 py-2 text-xs sm:text-sm font-semibold text-slate-800 focus:border-blue-600 focus:bg-white focus:outline-none">
+          <select id="filter-year" class="w-full rounded border border-stone-300 bg-stone-50 px-2 py-1.5 text-xs font-semibold text-stone-800 focus:border-stone-800 focus:bg-white focus:outline-none">
             <option value="2024" selected>2024 (18th Lok Sabha)</option>
             <option value="2019">2019 (17th Lok Sabha)</option>
             <option value="2014">2014 (16th Lok Sabha)</option>
             <option value="2009">2009 (15th Lok Sabha)</option>
             <option value="2004">2004 (14th Lok Sabha)</option>
-            <option value="ALL">All Years (1951–2024 Trend)</option>
+            <option value="ALL">All Years (1951–2024)</option>
           </select>
         </div>
 
         <!-- Geographical Region Selector -->
         <div>
-          <label for="filter-region" class="block text-[11px] font-semibold uppercase tracking-wider text-slate-500 mb-1">
-            Geographical Region
+          <label for="filter-region" class="block text-[10px] font-bold uppercase tracking-wider text-stone-500 mb-0.5">
+            Region
           </label>
-          <select id="filter-region" class="w-full rounded-lg border border-slate-300 bg-slate-50 px-3 py-2 text-xs sm:text-sm font-medium text-slate-800 focus:border-blue-600 focus:bg-white focus:outline-none">
-            <option value="ALL" selected>All India (6 Macro Regions)</option>
+          <select id="filter-region" class="w-full rounded border border-stone-300 bg-stone-50 px-2 py-1.5 text-xs font-medium text-stone-800 focus:border-stone-800 focus:bg-white focus:outline-none">
+            <option value="ALL" selected>All India (6 Regions)</option>
             <option value="North India">North India</option>
             <option value="West India">West India</option>
             <option value="Central India">Central India</option>
@@ -229,73 +240,73 @@
         </div>
 
         <!-- Political Party / Alliance Filter -->
-        <div>
-          <label for="filter-party" class="block text-[11px] font-semibold uppercase tracking-wider text-slate-500 mb-1">
-            Alliance / Political Party
+        <div class="col-span-1">
+          <label for="filter-party" class="block text-[10px] font-bold uppercase tracking-wider text-stone-500 mb-0.5">
+            Alliance / Party
           </label>
-          <select id="filter-party" class="w-full rounded-lg border border-slate-300 bg-slate-50 px-3 py-2 text-xs sm:text-sm font-medium text-slate-800 focus:border-blue-600 focus:bg-white focus:outline-none">
-            <option value="ALL" selected>All Parties &amp; Alliances</option>
-            <optgroup label="Major Alliances">
-              <option value="ALLIANCE:NDA">NDA (National Democratic Alliance)</option>
-              <option value="ALLIANCE:INDIA">INDIA / UPA Bloc</option>
-              <option value="ALLIANCE:Unaligned">Unaligned / Regional Others</option>
+          <select id="filter-party" class="w-full rounded border border-stone-300 bg-stone-50 px-2 py-1.5 text-xs font-medium text-stone-800 focus:border-stone-800 focus:bg-white focus:outline-none">
+            <option value="ALL" selected>All Parties &amp; Blocs</option>
+            <optgroup label="Alliances">
+              <option value="ALLIANCE:NDA">NDA</option>
+              <option value="ALLIANCE:INDIA">INDIA / UPA</option>
+              <option value="ALLIANCE:Unaligned">Unaligned / Regional</option>
             </optgroup>
             <optgroup label="Major Parties">
-              <option value="PARTY:BJP">Bharatiya Janata Party (BJP)</option>
-              <option value="PARTY:INC">Indian National Congress (INC)</option>
-              <option value="PARTY:SP">Samajwadi Party (SP)</option>
-              <option value="PARTY:AITC">All India Trinamool Congress (AITC)</option>
-              <option value="PARTY:DMK">Dravida Munnetra Kazhagam (DMK)</option>
-              <option value="PARTY:TDP">Telugu Desam Party (TDP)</option>
-              <option value="PARTY:JD(U)">Janata Dal (United) (JD(U))</option>
-              <option value="PARTY:YSRCP">YSR Congress Party (YSRCP)</option>
-              <option value="PARTY:BJD">Biju Janata Dal (BJD)</option>
-              <option value="PARTY:BSP">Bahujan Samaj Party (BSP)</option>
+              <option value="PARTY:BJP">BJP</option>
+              <option value="PARTY:INC">INC</option>
+              <option value="PARTY:SP">SP</option>
+              <option value="PARTY:AITC">AITC</option>
+              <option value="PARTY:DMK">DMK</option>
+              <option value="PARTY:TDP">TDP</option>
+              <option value="PARTY:JD(U)">JD(U)</option>
+              <option value="PARTY:YSRCP">YSRCP</option>
+              <option value="PARTY:BJD">BJD</option>
+              <option value="PARTY:BSP">BSP</option>
             </optgroup>
           </select>
         </div>
 
         <!-- State Map & Demographic Metric Selector -->
-        <div>
-          <label for="filter-metric" class="block text-[11px] font-semibold uppercase tracking-wider text-slate-500 mb-1">
-            Map &amp; State Metric
+        <div class="col-span-1">
+          <label for="filter-metric" class="block text-[10px] font-bold uppercase tracking-wider text-stone-500 mb-0.5">
+            Map Metric
           </label>
-          <select id="filter-metric" class="w-full rounded-lg border border-slate-300 bg-slate-50 px-3 py-2 text-xs sm:text-sm font-medium text-slate-800 focus:border-blue-600 focus:bg-white focus:outline-none">
-            <option value="turnout_pct" selected>Total Voter Turnout (%)</option>
-            <option value="female_turnout_pct">Female Voter Turnout (%)</option>
-            <option value="male_turnout_pct">Male Voter Turnout (%)</option>
-            <option value="youth_elector_share_pct">Youth Elector Share 18–29 (%)</option>
-            <option value="avg_victory_margin_pct">Avg Victory Margin (%)</option>
+          <select id="filter-metric" class="w-full rounded border border-stone-300 bg-stone-50 px-2 py-1.5 text-xs font-medium text-stone-800 focus:border-stone-800 focus:bg-white focus:outline-none">
+            <option value="turnout_pct" selected>Turnout (%)</option>
+            <option value="female_turnout_pct">Female Turnout (%)</option>
+            <option value="male_turnout_pct">Male Turnout (%)</option>
+            <option value="youth_elector_share_pct">Youth Share 18–29 (%)</option>
+            <option value="avg_victory_margin_pct">Avg Margin (%)</option>
           </select>
         </div>
 
         <!-- Reset & Status Controls -->
-        <div class="flex items-center gap-2">
-          <button id="reset-filters-btn" class="w-full inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg border border-slate-300 bg-white hover:bg-slate-100 text-xs sm:text-sm font-semibold text-slate-700 transition cursor-pointer">
-            <svg class="w-3.5 h-3.5 text-slate-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+        <div class="col-span-2 sm:col-span-1">
+          <button id="reset-filters-btn" class="w-full inline-flex items-center justify-center gap-1 px-2.5 py-1.5 rounded border border-stone-300 bg-stone-50 hover:bg-stone-100 text-xs font-medium text-stone-700 transition cursor-pointer">
+            <svg class="w-3 h-3 text-stone-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
             </svg>
-            <span>Reset Filters</span>
+            <span>Reset</span>
           </button>
         </div>
       </div>
 
       <!-- Active Filter Breadcrumb & Live Validation Status -->
-      <div class="mt-3 pt-2.5 border-t border-slate-100 flex flex-wrap items-center justify-between gap-2 text-xs">
-        <div class="flex flex-wrap items-center gap-2">
-          <span class="text-slate-500 font-medium">Active Scope:</span>
-          <span id="active-filter-badge" class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-blue-50 text-blue-800 border border-blue-200 font-semibold">
-            Year: 2024 • Region: All India • Party: All
+      <div class="mt-2 pt-2 border-t border-stone-100 flex flex-wrap items-center justify-between gap-1.5 text-[11px]">
+        <div class="flex flex-wrap items-center gap-1.5">
+          <span class="text-stone-500 font-medium">Scope:</span>
+          <span id="active-filter-badge" class="inline-flex items-center px-2 py-0.5 rounded bg-stone-100 text-stone-800 border border-stone-200 font-medium">
+            2024 • All India • All Parties
           </span>
-          <span id="selected-state-pill" class="hidden inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-amber-50 text-amber-800 border border-amber-200 font-semibold">
+          <span id="selected-state-pill" class="hidden inline-flex items-center gap-1 px-2 py-0.5 rounded bg-amber-50 text-amber-900 border border-amber-200 font-medium">
             <span id="selected-state-name">State</span>
             <button id="clear-state-btn" class="ml-1 text-amber-900 hover:text-black font-bold" title="Clear state focus">&times;</button>
           </span>
         </div>
 
-        <div id="validation-pill" class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200 font-medium">
-          <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-          <span id="validation-status-text">Data Validation: Verified against 4 ECI CSVs (543/543 seats)</span>
+        <div id="validation-pill" class="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-stone-100 text-stone-700 border border-stone-200 text-[10px] font-mono">
+          <span class="w-1.5 h-1.5 rounded-full bg-emerald-600"></span>
+          <span id="validation-status-text">543/543 seats reconciled</span>
         </div>
       </div>
     </div>
@@ -304,77 +315,77 @@
   <!-- ===================================================================== -->
   <!-- MAIN DASHBOARD CONTAINER                                              -->
   <!-- ===================================================================== -->
-  <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+  <main class="flex-1 max-w-7xl w-full mx-auto px-3 sm:px-6 lg:px-8 py-3.5 sm:py-5 space-y-3.5 sm:space-y-5">
 
     <!-- =================================================================== -->
-    <!-- 3. KPI SUMMARY CARDS (4-COLUMN RESPONSIVE GRID)                     -->
+    <!-- 3. KPI SUMMARY CARDS (COMPACT 2x2 ON MOBILE, 4-COL ON DESKTOP)      -->
     <!-- =================================================================== -->
-    <section aria-label="Key Performance Indicators" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+    <section aria-label="Key Performance Indicators" class="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3.5">
       <!-- KPI 1: Voter Turnout -->
-      <div class="chart-card p-4 flex flex-col justify-between">
-        <div class="flex items-start justify-between">
-          <div>
-            <p class="text-xs font-semibold uppercase tracking-wider text-slate-500" id="kpi-turnout-label">Voter Turnout (2024)</p>
-            <h2 class="text-2xl sm:text-3xl font-extrabold text-slate-900 tabular-nums mt-1" id="kpi-turnout-value">66.10%</h2>
+      <div class="chart-card p-2.5 sm:p-4 flex flex-col justify-between border-t-2 border-t-stone-800">
+        <div>
+          <div class="flex items-start justify-between gap-1">
+            <p class="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-stone-500 truncate" id="kpi-turnout-label">Turnout (2024)</p>
+            <span id="kpi-turnout-delta" class="text-[9px] sm:text-[10px] font-mono font-medium text-stone-600 bg-stone-100 px-1 rounded tabular-nums whitespace-nowrap">
+              -1.30 pp
+            </span>
           </div>
-          <span id="kpi-turnout-delta" class="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-amber-50 text-amber-800 border border-amber-200 tabular-nums">
-            -1.30 pp vs 2019
-          </span>
+          <h2 class="text-xl sm:text-3xl font-serif font-bold text-stone-900 tabular-nums mt-0.5 sm:mt-1" id="kpi-turnout-value">66.10%</h2>
         </div>
-        <div class="mt-3 pt-2.5 border-t border-slate-100 flex items-center justify-between text-xs text-slate-600 tabular-nums">
-          <span>Female: <strong id="kpi-female-turnout" class="text-slate-900">65.78%</strong></span>
-          <span>Male: <strong id="kpi-male-turnout" class="text-slate-900">65.55%</strong></span>
+        <div class="mt-2 pt-1.5 border-t border-stone-100 flex items-center justify-between text-[10px] sm:text-xs text-stone-600 tabular-nums">
+          <span>F: <strong id="kpi-female-turnout" class="text-stone-900">65.78%</strong></span>
+          <span>M: <strong id="kpi-male-turnout" class="text-stone-900">65.55%</strong></span>
         </div>
       </div>
 
       <!-- KPI 2: Seats Scope -->
-      <div class="chart-card p-4 flex flex-col justify-between">
-        <div class="flex items-start justify-between">
-          <div>
-            <p class="text-xs font-semibold uppercase tracking-wider text-slate-500" id="kpi-seats-label">Lok Sabha Seats</p>
-            <h2 class="text-2xl sm:text-3xl font-extrabold text-slate-900 tabular-nums mt-1" id="kpi-seats-value">543</h2>
+      <div class="chart-card p-2.5 sm:p-4 flex flex-col justify-between border-t-2 border-t-stone-800">
+        <div>
+          <div class="flex items-start justify-between gap-1">
+            <p class="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-stone-500 truncate" id="kpi-seats-label">Lok Sabha Seats</p>
+            <span id="kpi-seats-badge" class="text-[9px] sm:text-[10px] font-mono font-medium text-stone-600 bg-stone-100 px-1 rounded tabular-nums whitespace-nowrap">
+              Maj: 272
+            </span>
           </div>
-          <span id="kpi-seats-badge" class="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-slate-100 text-slate-700 border border-slate-200 tabular-nums">
-            Majority: 272
-          </span>
+          <h2 class="text-xl sm:text-3xl font-serif font-bold text-stone-900 tabular-nums mt-0.5 sm:mt-1" id="kpi-seats-value">543</h2>
         </div>
-        <div class="mt-3 pt-2.5 border-t border-slate-100 flex items-center justify-between text-xs text-slate-600">
-          <span id="kpi-seats-sub1">36 States &amp; UTs</span>
-          <span id="kpi-seats-sub2" class="font-semibold text-slate-800 tabular-nums">100.0% Scope</span>
+        <div class="mt-2 pt-1.5 border-t border-stone-100 flex items-center justify-between text-[10px] sm:text-xs text-stone-600">
+          <span id="kpi-seats-sub1" class="truncate">36 States/UTs</span>
+          <span id="kpi-seats-sub2" class="font-medium text-stone-800 tabular-nums ml-1">100% Scope</span>
         </div>
       </div>
 
       <!-- KPI 3: Electors & Votes Polled -->
-      <div class="chart-card p-4 flex flex-col justify-between">
-        <div class="flex items-start justify-between">
-          <div>
-            <p class="text-xs font-semibold uppercase tracking-wider text-slate-500" id="kpi-electors-label">Registered Electors</p>
-            <h2 class="text-2xl sm:text-3xl font-extrabold text-slate-900 tabular-nums mt-1" id="kpi-electors-value">97.98 Cr</h2>
+      <div class="chart-card p-2.5 sm:p-4 flex flex-col justify-between border-t-2 border-t-stone-800">
+        <div>
+          <div class="flex items-start justify-between gap-1">
+            <p class="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-stone-500 truncate" id="kpi-electors-label">Electors (2024)</p>
+            <span class="text-[9px] sm:text-[10px] font-mono font-medium text-stone-600 bg-stone-100 px-1 rounded tabular-nums whitespace-nowrap">
+              ECI Roll
+            </span>
           </div>
-          <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-200">
-            ECI Roll
-          </span>
+          <h2 class="text-xl sm:text-3xl font-serif font-bold text-stone-900 tabular-nums mt-0.5 sm:mt-1" id="kpi-electors-value">97.98 Cr</h2>
         </div>
-        <div class="mt-3 pt-2.5 border-t border-slate-100 flex items-center justify-between text-xs text-slate-600 tabular-nums">
-          <span>Votes Polled: <strong id="kpi-votes-value" class="text-slate-900">64.64 Cr</strong></span>
-          <span id="kpi-elector-growth" class="text-emerald-700 font-semibold">+7.4% vs 2019</span>
+        <div class="mt-2 pt-1.5 border-t border-stone-100 flex items-center justify-between text-[10px] sm:text-xs text-stone-600 tabular-nums">
+          <span class="truncate">Votes: <strong id="kpi-votes-value" class="text-stone-900">64.64 Cr</strong></span>
+          <span id="kpi-elector-growth" class="text-stone-700 font-medium ml-1">+7.4%</span>
         </div>
       </div>
 
-      <!-- KPI 4: Winning Party / Leading Alliance -->
-      <div class="chart-card p-4 flex flex-col justify-between">
-        <div class="flex items-start justify-between">
-          <div class="min-w-0 pr-2">
-            <p class="text-xs font-semibold uppercase tracking-wider text-slate-500" id="kpi-winner-label">Winning Formation</p>
-            <h2 class="text-lg sm:text-xl font-extrabold text-slate-900 truncate mt-1" id="kpi-winner-value">BJP (NDA)</h2>
+      <!-- KPI 4: Winning Party / Formation -->
+      <div class="chart-card p-2.5 sm:p-4 flex flex-col justify-between border-t-2 border-t-stone-800">
+        <div>
+          <div class="flex items-start justify-between gap-1">
+            <p class="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-stone-500 truncate" id="kpi-winner-label">Leader</p>
+            <span id="kpi-winner-badge" class="text-[9px] sm:text-[10px] font-mono font-medium text-amber-900 bg-amber-50 px-1 rounded tabular-nums whitespace-nowrap">
+              293 NDA
+            </span>
           </div>
-          <span id="kpi-winner-badge" class="flex-shrink-0 inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold bg-orange-50 text-orange-800 border border-orange-200 tabular-nums">
-            293 NDA Seats
-          </span>
+          <h2 class="text-lg sm:text-2xl font-serif font-bold text-stone-900 truncate mt-0.5 sm:mt-1" id="kpi-winner-value">BJP (NDA)</h2>
         </div>
-        <div class="mt-3 pt-2.5 border-t border-slate-100 flex items-center justify-between text-xs text-slate-600 tabular-nums">
-          <span id="kpi-winner-sub1">BJP: 240 Seats (36.56%)</span>
-          <span id="kpi-winner-sub2" class="font-semibold text-blue-700">INDIA: 234</span>
+        <div class="mt-2 pt-1.5 border-t border-stone-100 flex items-center justify-between text-[10px] sm:text-xs text-stone-600 tabular-nums">
+          <span id="kpi-winner-sub1" class="truncate">BJP: 240 (36.6%)</span>
+          <span id="kpi-winner-sub2" class="font-medium text-blue-800 ml-1">INDIA: 234</span>
         </div>
       </div>
     </section>
@@ -382,110 +393,108 @@
     <!-- =================================================================== -->
     <!-- 4. PRIMARY CHARTS GRID (ROW 1: HISTORICAL LINE + PARTY BAR CHART)   -->
     <!-- =================================================================== -->
-    <section id="section-overview" class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+    <section id="section-overview" class="grid grid-cols-1 lg:grid-cols-12 gap-3.5 sm:gap-5">
       <!-- Chart 1: Historical Voter Turnout Line Chart (1951-2024) -->
-      <div class="chart-card p-5 lg:col-span-7 flex flex-col">
-        <div class="flex flex-wrap items-start justify-between gap-2 mb-3">
+      <div class="chart-card p-3 sm:p-4.5 lg:col-span-7 flex flex-col">
+        <div class="flex flex-wrap items-start justify-between gap-1.5 mb-2 sm:mb-2.5">
           <div>
-            <h3 class="text-base font-bold text-slate-900">Historical Voter Turnout &amp; Gender Convergence (1951–2024)</h3>
-            <p class="text-xs text-slate-500">Overall, Male &amp; Female turnout % across 18 Lok Sabha elections (1951–67 gender data marked NA)</p>
+            <h3 class="text-sm sm:text-base font-serif font-bold text-stone-900">Historical Turnout &amp; Gender Parity (1951–2024)</h3>
+            <p class="text-[10px] sm:text-xs text-stone-500">Overall, Male &amp; Female turnout % across 18 elections (1951–67 gender data NA)</p>
           </div>
           <!-- Legend -->
-          <div class="flex items-center gap-3 text-xs font-medium">
-            <span class="inline-flex items-center gap-1.5"><span class="w-3 h-0.5 bg-slate-900 inline-block"></span>Overall</span>
-            <span class="inline-flex items-center gap-1.5"><span class="w-3 h-0.5 bg-blue-600 inline-block"></span>Male</span>
-            <span class="inline-flex items-center gap-1.5"><span class="w-3 h-0.5 bg-rose-600 inline-block"></span>Female</span>
+          <div class="flex items-center gap-2.5 text-[10px] sm:text-xs font-medium text-stone-700">
+            <span class="inline-flex items-center gap-1"><span class="w-2.5 h-0.5 bg-stone-900 inline-block"></span>Overall</span>
+            <span class="inline-flex items-center gap-1"><span class="w-2.5 h-0.5 bg-blue-700 inline-block"></span>Male</span>
+            <span class="inline-flex items-center gap-1"><span class="w-2.5 h-0.5 bg-rose-600 inline-block"></span>Female</span>
           </div>
         </div>
-        <div id="line-chart-container" class="w-full h-[310px] relative"></div>
+        <div id="line-chart-container" class="w-full h-[220px] sm:h-[290px] relative"></div>
       </div>
 
       <!-- Chart 2: Party Performance Bar Chart -->
-      <div class="chart-card p-5 lg:col-span-5 flex flex-col">
-        <div class="flex flex-wrap items-start justify-between gap-2 mb-3">
+      <div class="chart-card p-3 sm:p-4.5 lg:col-span-5 flex flex-col">
+        <div class="flex flex-wrap items-start justify-between gap-1.5 mb-2 sm:mb-2.5">
           <div>
-            <h3 class="text-base font-bold text-slate-900" id="party-chart-title">Party Performance (2024)</h3>
-            <p class="text-xs text-slate-500" id="party-chart-subtitle">Top parties color-coded by political alliance</p>
+            <h3 class="text-sm sm:text-base font-serif font-bold text-stone-900" id="party-chart-title">Party Performance (2024)</h3>
+            <p class="text-[10px] sm:text-xs text-stone-500" id="party-chart-subtitle">Top parties categorized by alliance</p>
           </div>
-          <div class="inline-flex rounded-lg border border-slate-200 p-0.5 bg-slate-50 text-xs">
-            <button id="toggle-party-seats" class="px-2.5 py-1 rounded-md font-semibold bg-white text-slate-900 shadow-2xs cursor-pointer">Seats</button>
-            <button id="toggle-party-votes" class="px-2.5 py-1 rounded-md font-medium text-slate-600 hover:text-slate-900 cursor-pointer">Vote %</button>
+          <div class="inline-flex rounded border border-stone-300 p-0.5 bg-stone-50 text-[11px]">
+            <button id="toggle-party-seats" class="px-2 py-0.5 rounded font-semibold bg-white text-stone-900 shadow-2xs cursor-pointer">Seats</button>
+            <button id="toggle-party-votes" class="px-2 py-0.5 rounded font-medium text-stone-600 hover:text-stone-900 cursor-pointer">Vote %</button>
           </div>
         </div>
         <!-- Alliance Color Key -->
-        <div class="flex items-center gap-3 text-[11px] font-medium text-slate-600 mb-2">
-          <span class="inline-flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-xs bg-orange-600"></span>NDA</span>
-          <span class="inline-flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-xs bg-blue-600"></span>INDIA / UPA</span>
-          <span class="inline-flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-xs bg-teal-600"></span>Unaligned / Others</span>
+        <div class="flex items-center gap-2.5 text-[10px] sm:text-[11px] font-medium text-stone-600 mb-1">
+          <span class="inline-flex items-center gap-1"><span class="w-2 h-2 rounded-xs bg-[#c2410c]"></span>NDA</span>
+          <span class="inline-flex items-center gap-1"><span class="w-2 h-2 rounded-xs bg-[#1e40af]"></span>INDIA / UPA</span>
+          <span class="inline-flex items-center gap-1"><span class="w-2 h-2 rounded-xs bg-[#0f766e]"></span>Unaligned</span>
         </div>
-        <div id="party-chart-container" class="w-full h-[290px] relative"></div>
+        <div id="party-chart-container" class="w-full h-[230px] sm:h-[270px] relative"></div>
       </div>
     </section>
 
     <!-- =================================================================== -->
     <!-- 5. REGIONAL & INTERACTIVE INDIA MAP GRID (ROW 2)                    -->
     <!-- =================================================================== -->
-    <section id="section-regional" class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+    <section id="section-regional" class="grid grid-cols-1 lg:grid-cols-12 gap-3.5 sm:gap-5">
       <!-- Chart 3: Interactive State-Wise India Map -->
-      <div class="chart-card p-5 lg:col-span-6 flex flex-col">
-        <div class="flex flex-wrap items-start justify-between gap-2 mb-2">
+      <div class="chart-card p-3 sm:p-4.5 lg:col-span-6 flex flex-col">
+        <div class="flex flex-wrap items-start justify-between gap-1.5 mb-2">
           <div>
-            <div class="flex items-center gap-2">
-              <h3 class="text-base font-bold text-slate-900" id="map-chart-title">State-Wise Electoral Choropleth (2024)</h3>
-              <span id="map-mode-badge" class="px-2 py-0.5 text-[10px] font-semibold rounded bg-slate-100 text-slate-600 border border-slate-200">
-                Geo-Cartogram
+            <div class="flex items-center gap-1.5">
+              <h3 class="text-sm sm:text-base font-serif font-bold text-stone-900" id="map-chart-title">State-Wise Map (2024)</h3>
+              <span id="map-mode-badge" class="px-1.5 py-0.5 text-[9px] font-medium rounded bg-stone-100 text-stone-600 border border-stone-200">
+                Boundaries
               </span>
-              <button id="toggle-map-view-btn" class="px-2 py-0.5 text-[10px] font-semibold rounded bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 shadow-2xs transition cursor-pointer" title="Toggle between Geographic Boundaries and India Tile Cartogram">
+              <button id="toggle-map-view-btn" class="px-1.5 py-0.5 text-[9px] font-semibold rounded bg-stone-100 hover:bg-stone-200 text-stone-700 border border-stone-300 transition cursor-pointer" title="Toggle between Geographic Boundaries and India Tile Cartogram">
                 ⇄ Switch View
               </button>
             </div>
-            <p class="text-xs text-slate-500" id="map-chart-subtitle">Click any State/UT to inspect demographics; hover for full ECI breakdown</p>
+            <p class="text-[10px] sm:text-xs text-stone-500" id="map-chart-subtitle">Tap any State/UT to focus demographics; hover for breakdown</p>
           </div>
           <!-- Dynamic Color Scale Legend -->
-          <div id="map-legend-container" class="flex items-center gap-1.5 text-[11px] text-slate-600"></div>
+          <div id="map-legend-container" class="flex items-center gap-1 text-[10px] text-stone-600"></div>
         </div>
-        <div id="india-map-container" class="w-full h-[380px] relative flex items-center justify-center bg-slate-50/60 rounded-lg border border-slate-100"></div>
+        <div id="india-map-container" class="w-full h-[290px] sm:h-[350px] relative flex items-center justify-center bg-stone-50/70 rounded border border-stone-200"></div>
       </div>
 
       <!-- Chart 4: Regional Alliance Comparison & Turnout Overlay -->
-      <div class="chart-card p-5 lg:col-span-6 flex flex-col">
-        <div class="flex flex-wrap items-start justify-between gap-2 mb-2">
+      <div class="chart-card p-3 sm:p-4.5 lg:col-span-6 flex flex-col">
+        <div class="flex flex-wrap items-start justify-between gap-1.5 mb-2">
           <div>
-            <h3 class="text-base font-bold text-slate-900" id="regional-chart-title">Regional Alliance Seat Distribution &amp; Turnout (2024)</h3>
-            <p class="text-xs text-slate-500">Grouped alliance seats (bars) vs. average regional voter turnout % (diamond markers)</p>
+            <h3 class="text-sm sm:text-base font-serif font-bold text-stone-900" id="regional-chart-title">Regional Coalition Seats &amp; Turnout (2024)</h3>
+            <p class="text-[10px] sm:text-xs text-stone-500">Grouped alliance seats (bars) vs. average voter turnout % (diamonds)</p>
           </div>
-          <div class="flex flex-wrap items-center gap-2.5 text-[11px] font-medium text-slate-600">
-            <span class="inline-flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-xs bg-orange-600"></span>NDA</span>
-            <span class="inline-flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-xs bg-blue-600"></span>INDIA/UPA</span>
-            <span class="inline-flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-xs bg-teal-600"></span>Others</span>
-            <span class="inline-flex items-center gap-1"><span class="w-2.5 h-2.5 rotate-45 bg-slate-900 inline-block"></span>Turnout %</span>
+          <div class="flex flex-wrap items-center gap-2 text-[10px] sm:text-[11px] font-medium text-stone-600">
+            <span class="inline-flex items-center gap-1"><span class="w-2 h-2 rounded-xs bg-[#c2410c]"></span>NDA</span>
+            <span class="inline-flex items-center gap-1"><span class="w-2 h-2 rounded-xs bg-[#1e40af]"></span>INDIA</span>
+            <span class="inline-flex items-center gap-1"><span class="w-2 h-2 rounded-xs bg-[#0f766e]"></span>Others</span>
+            <span class="inline-flex items-center gap-1"><span class="w-2 h-2 rotate-45 bg-stone-800 inline-block"></span>Turnout %</span>
           </div>
         </div>
-        <div id="regional-chart-container" class="w-full h-[380px] relative"></div>
+        <div id="regional-chart-container" class="w-full h-[290px] sm:h-[350px] relative"></div>
       </div>
     </section>
 
     <!-- =================================================================== -->
-    <!-- 6. DYNAMIC ANALYTICAL INSIGHTS PANEL                                -->
+    <!-- 6. DYNAMIC ANALYTICAL OBSERVATIONS PANEL                            -->
     <!-- =================================================================== -->
-    <section aria-label="Automated Analytical Insights" class="chart-card p-5 border-l-4 border-l-blue-600">
-      <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+    <section aria-label="Analytical Observations" class="chart-card p-3 sm:p-4 border-l-4 border-l-stone-800 bg-[#faf9f5]">
+      <div class="flex flex-wrap items-center justify-between gap-1.5 mb-2">
         <div class="flex items-center gap-2">
-          <span class="w-7 h-7 rounded-lg bg-blue-50 text-blue-700 flex items-center justify-center">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-          </span>
+          <div class="w-5 h-5 rounded bg-stone-200 text-stone-800 flex items-center justify-center font-serif font-bold text-xs">
+            ¶
+          </div>
           <div>
-            <h3 class="text-base font-bold text-slate-900">Key Empirical Findings &amp; Behavioural Insights</h3>
-            <p class="text-xs text-slate-500">Dynamically synthesized from active filter selections and underlying ECI datasets</p>
+            <h3 class="text-sm sm:text-base font-serif font-bold text-stone-900">Key Observations &amp; Historical Notes</h3>
+            <p class="text-[10px] sm:text-xs text-stone-500">Empirical findings synthesized from official ECI reports</p>
           </div>
         </div>
-        <span id="insights-context-tag" class="text-xs font-semibold px-2.5 py-1 rounded-md bg-slate-100 text-slate-700">
-          2024 National &amp; Regional Synthesis
+        <span id="insights-context-tag" class="text-[10px] font-medium px-2 py-0.5 rounded bg-stone-200/80 text-stone-700">
+          2024 National Synthesis
         </span>
       </div>
-      <div id="insights-grid" class="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div id="insights-grid" class="grid grid-cols-1 md:grid-cols-3 gap-2 sm:gap-3">
         <!-- Populated dynamically by JS -->
       </div>
     </section>
@@ -493,63 +502,63 @@
     <!-- =================================================================== -->
     <!-- 7. INTERACTIVE DATA TABLE, VALIDATION & CSV DOWNLOAD HUB            -->
     <!-- =================================================================== -->
-    <section id="section-explorer" class="chart-card p-5">
-      <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 pb-4 border-b border-slate-200">
+    <section id="section-explorer" class="chart-card p-3 sm:p-4.5">
+      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 pb-2.5 border-b border-stone-200">
         <div>
-          <h3 class="text-base font-bold text-slate-900">Underlying Election Datasets &amp; Source Validation</h3>
-          <p class="text-xs text-slate-500">Inspect, search, sort, and download the four canonical CSV datasets powering this observatory</p>
+          <h3 class="text-sm sm:text-base font-serif font-bold text-stone-900">Election Datasets &amp; Validation</h3>
+          <p class="text-[10px] sm:text-xs text-stone-500">Browse, search, sort, and download the four canonical CSV datasets</p>
         </div>
 
-        <!-- Direct Download Buttons for all 4 source CSVs -->
-        <div class="flex flex-wrap items-center gap-2">
-          <button data-download="national" class="csv-dl-btn inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-slate-300 bg-slate-50 hover:bg-slate-100 text-xs font-semibold text-slate-700 transition cursor-pointer">
+        <!-- Download Buttons -->
+        <div class="flex flex-wrap items-center gap-1.5">
+          <button data-download="national" class="csv-dl-btn inline-flex items-center gap-1 px-2 py-1 rounded border border-stone-300 bg-stone-50 hover:bg-stone-100 text-[11px] font-medium text-stone-700 transition cursor-pointer">
             <span>↓ national_series.csv</span>
           </button>
-          <button data-download="party" class="csv-dl-btn inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-slate-300 bg-slate-50 hover:bg-slate-100 text-xs font-semibold text-slate-700 transition cursor-pointer">
+          <button data-download="party" class="csv-dl-btn inline-flex items-center gap-1 px-2 py-1 rounded border border-stone-300 bg-stone-50 hover:bg-stone-100 text-[11px] font-medium text-stone-700 transition cursor-pointer">
             <span>↓ party_performance.csv</span>
           </button>
-          <button data-download="regional" class="csv-dl-btn inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-slate-300 bg-slate-50 hover:bg-slate-100 text-xs font-semibold text-slate-700 transition cursor-pointer">
+          <button data-download="regional" class="csv-dl-btn inline-flex items-center gap-1 px-2 py-1 rounded border border-stone-300 bg-stone-50 hover:bg-stone-100 text-[11px] font-medium text-stone-700 transition cursor-pointer">
             <span>↓ regional_shifts.csv</span>
           </button>
-          <button data-download="state" class="csv-dl-btn inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-slate-300 bg-slate-50 hover:bg-slate-100 text-xs font-semibold text-slate-700 transition cursor-pointer">
+          <button data-download="state" class="csv-dl-btn inline-flex items-center gap-1 px-2 py-1 rounded border border-stone-300 bg-stone-50 hover:bg-stone-100 text-[11px] font-medium text-stone-700 transition cursor-pointer">
             <span>↓ state_demographics.csv</span>
           </button>
         </div>
       </div>
 
-      <!-- Table Tabs & Search Controls -->
-      <div class="mt-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-        <div class="flex flex-wrap gap-1.5 bg-slate-100 p-1 rounded-lg">
-          <button data-table-tab="state" class="table-tab-btn px-3 py-1.5 rounded-md text-xs font-semibold bg-white text-slate-900 shadow-2xs cursor-pointer">
+      <!-- Table Tabs & Search -->
+      <div class="mt-2.5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+        <div class="flex items-center gap-1 overflow-x-auto pb-0.5 sm:pb-0">
+          <button data-table-tab="state" class="table-tab-btn px-2.5 py-1 rounded text-[11px] font-semibold bg-stone-800 text-stone-100 shadow-2xs cursor-pointer whitespace-nowrap">
             state_demographics.csv
           </button>
-          <button data-table-tab="party" class="table-tab-btn px-3 py-1.5 rounded-md text-xs font-medium text-slate-600 hover:text-slate-900 cursor-pointer">
+          <button data-table-tab="party" class="table-tab-btn px-2.5 py-1 rounded text-[11px] font-medium text-stone-600 hover:text-stone-900 bg-stone-100 cursor-pointer whitespace-nowrap">
             party_performance.csv
           </button>
-          <button data-table-tab="regional" class="table-tab-btn px-3 py-1.5 rounded-md text-xs font-medium text-slate-600 hover:text-slate-900 cursor-pointer">
+          <button data-table-tab="regional" class="table-tab-btn px-2.5 py-1 rounded text-[11px] font-medium text-stone-600 hover:text-stone-900 bg-stone-100 cursor-pointer whitespace-nowrap">
             regional_shifts.csv
           </button>
-          <button data-table-tab="national" class="table-tab-btn px-3 py-1.5 rounded-md text-xs font-medium text-slate-600 hover:text-slate-900 cursor-pointer">
+          <button data-table-tab="national" class="table-tab-btn px-2.5 py-1 rounded text-[11px] font-medium text-stone-600 hover:text-stone-900 bg-stone-100 cursor-pointer whitespace-nowrap">
             national_series.csv
           </button>
         </div>
 
-        <div class="flex items-center gap-2">
-          <input id="table-search-input" type="text" placeholder="Filter rows by state, party, year..." class="w-full sm:w-64 rounded-lg border border-slate-300 px-3 py-1.5 text-xs focus:border-blue-600 focus:outline-none" />
-          <span id="table-row-count" class="text-xs font-medium text-slate-500 whitespace-nowrap tabular-nums">36 rows</span>
+        <div class="flex items-center gap-1.5">
+          <input id="table-search-input" type="text" placeholder="Search records..." class="w-full sm:w-52 rounded border border-stone-300 px-2 py-1 text-xs focus:border-stone-800 focus:outline-none bg-stone-50/50" />
+          <span id="table-row-count" class="text-[11px] font-mono font-medium text-stone-500 whitespace-nowrap tabular-nums">36 rows</span>
         </div>
       </div>
 
-      <!-- Data Reconciliation Audit Bar -->
-      <div id="reconciliation-banner" class="mt-3 px-3.5 py-2 rounded-lg bg-slate-50 border border-slate-200 flex flex-wrap items-center justify-between gap-2 text-xs text-slate-700">
-        <!-- Populated dynamically with sum validation -->
+      <!-- Reconciliation Banner -->
+      <div id="reconciliation-banner" class="mt-2 px-3 py-1.5 rounded bg-stone-50 border border-stone-200 flex flex-wrap items-center justify-between gap-1.5 text-[11px] text-stone-700">
+        <!-- Populated dynamically -->
       </div>
 
-      <!-- Responsive Scrollable Table -->
-      <div class="mt-3 overflow-x-auto border border-slate-200 rounded-lg max-h-[380px]">
-        <table class="min-w-full divide-y divide-slate-200 text-xs">
-          <thead id="data-table-head" class="bg-slate-50 sticky top-0 z-10"></thead>
-          <tbody id="data-table-body" class="divide-y divide-slate-100 bg-white tabular-nums"></tbody>
+      <!-- Responsive Table -->
+      <div class="mt-2 overflow-x-auto border border-stone-200 rounded max-h-[350px]">
+        <table class="min-w-full divide-y divide-stone-200 text-[11px] sm:text-xs">
+          <thead id="data-table-head" class="bg-stone-100/90 sticky top-0 z-10"></thead>
+          <tbody id="data-table-body" class="divide-y divide-stone-100 bg-white tabular-nums"></tbody>
         </table>
       </div>
     </section>
@@ -557,10 +566,10 @@
   </main>
 
   <!-- Footer -->
-  <footer class="bg-white border-t border-slate-200 mt-8 py-4">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-slate-500">
-      <p>Data Sources: Election Commission of India (ECI) Statistical Reports (1951–2024), TCPD Lok Dhaba &amp; OGD India.</p>
-      <p>Built with HTML5, Tailwind CSS, D3.js v7 &amp; TopoJSON • Phase 5–7 Production Build</p>
+  <footer class="bg-white border-t border-stone-200 mt-6 py-3">
+    <div class="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-1 text-[11px] text-stone-500">
+      <p>Data Source: Election Commission of India (ECI) Statistical Reports (1951–2024).</p>
+      <p>Bharat Electoral Observatory • D3.js v7</p>
     </div>
   </footer>
 
@@ -920,9 +929,9 @@
     };
 
     const ALLIANCE_COLORS = {
-      NDA: '#ea580c',
-      INDIA: '#2563eb',
-      Unaligned: '#0d9488'
+      NDA: '#c2410c',      // Warm Terracotta / Saffron
+      INDIA: '#1e40af',    // Deep Parliamentary Navy
+      Unaligned: '#0f766e' // Editorial Sage Teal
     };
 
     const METRIC_META = {
@@ -1163,9 +1172,12 @@
       container.selectAll('*').remove();
 
       const bounds = container.node().getBoundingClientRect();
-      const width = Math.max(300, bounds.width);
-      const height = 310;
-      const margin = { top: 20, right: 24, bottom: 38, left: 44 };
+      const width = Math.max(260, bounds.width);
+      const isMobile = width < 500;
+      const height = isMobile ? 220 : 290;
+      const margin = isMobile
+        ? { top: 16, right: 14, bottom: 26, left: 34 }
+        : { top: 20, right: 24, bottom: 36, left: 42 };
       const innerW = width - margin.left - margin.right;
       const innerH = height - margin.top - margin.bottom;
 
@@ -1188,11 +1200,11 @@
       // Horizontal Gridlines
       g.append('g')
         .attr('class', 'grid')
-        .call(d3.axisLeft(y).ticks(6).tickSize(-innerW).tickFormat(''));
+        .call(d3.axisLeft(y).ticks(5).tickSize(-innerW).tickFormat(''));
 
       // Axes
-      const tickYears = width < 480
-        ? [1952, 1967, 1984, 1999, 2014, 2024]
+      const tickYears = isMobile
+        ? [1952, 1977, 1999, 2014, 2024]
         : [1952, 1962, 1971, 1980, 1989, 1999, 2009, 2019, 2024];
 
       g.append('g')
@@ -1202,7 +1214,7 @@
 
       g.append('g')
         .attr('class', 'axis')
-        .call(d3.axisLeft(y).ticks(6).tickFormat(d => `${d}%`));
+        .call(d3.axisLeft(y).ticks(5).tickFormat(d => `${d}%`));
 
       // Highlight selected year vertical indicator
       const activeYearNum = +data.activeYear;
@@ -1211,16 +1223,16 @@
         .attr('x2', x(activeYearNum))
         .attr('y1', 0)
         .attr('y2', innerH)
-        .attr('stroke', '#f59e0b')
-        .attr('stroke-width', 2)
-        .attr('stroke-dasharray', '4,3');
+        .attr('stroke', '#d97706')
+        .attr('stroke-width', 1.8)
+        .attr('stroke-dasharray', '3,3');
 
       g.append('text')
         .attr('x', x(activeYearNum))
-        .attr('y', -6)
+        .attr('y', -4)
         .attr('text-anchor', 'middle')
-        .attr('fill', '#b45309')
-        .attr('font-size', '10px')
+        .attr('fill', '#92400e')
+        .attr('font-size', isMobile ? '8.5px' : '10px')
         .attr('font-weight', '700')
         .text(`Selected: ${activeYearNum}`);
 
@@ -1246,8 +1258,8 @@
       g.append('path')
         .datum(parsedNational)
         .attr('fill', 'none')
-        .attr('stroke', '#2563eb')
-        .attr('stroke-width', 2)
+        .attr('stroke', '#1e40af')
+        .attr('stroke-width', 1.8)
         .attr('stroke-opacity', 0.85)
         .attr('d', lineMale);
 
@@ -1287,7 +1299,7 @@
             <div>Overall Turnout: <strong>${d.turnout_pct.toFixed(2)}%</strong></div>
             <div>Female Turnout: <strong class="text-rose-300">${femStr}</strong></div>
             <div>Male Turnout: <strong class="text-blue-300">${maleStr}</strong></div>
-            <div class="mt-1 pt-1 border-t border-slate-700 text-[11px] text-slate-300">
+            <div class="mt-1 pt-1 border-t border-stone-700 text-[11px] text-stone-300">
               Electors: ${formatCrores(d.electors)} • Winner: ${d.winner}
             </div>
           `, event);
@@ -1338,9 +1350,12 @@
         .slice(0, 10);
 
       const bounds = container.node().getBoundingClientRect();
-      const width = Math.max(280, bounds.width);
-      const height = 290;
-      const margin = { top: 8, right: 48, bottom: 26, left: 68 };
+      const width = Math.max(260, bounds.width);
+      const isMobile = width < 500;
+      const height = isMobile ? 230 : 270;
+      const margin = isMobile
+        ? { top: 8, right: 32, bottom: 20, left: 52 }
+        : { top: 8, right: 48, bottom: 26, left: 66 };
       const innerW = width - margin.left - margin.right;
       const innerH = height - margin.top - margin.bottom;
 
@@ -1385,7 +1400,7 @@
             .attr('x', majX)
             .attr('y', -4)
             .attr('text-anchor', 'middle')
-            .attr('font-size', '10px')
+            .attr('font-size', isMobile ? '8.5px' : '9.5px')
             .attr('font-weight', '700')
             .attr('fill', '#dc2626')
             .text('272 Majority');
@@ -1473,8 +1488,9 @@
       legendEl.append('span').text(`${meta.domain[1]}${meta.unit}`);
 
       const bounds = container.node().getBoundingClientRect();
-      const width = Math.max(300, bounds.width);
-      const height = 380;
+      const width = Math.max(260, bounds.width);
+      const isMobile = width < 500;
+      const height = isMobile ? 290 : 350;
 
       const svg = container.append('svg')
         .attr('width', width)
@@ -1609,8 +1625,8 @@
     function showStateTooltip(st, meta, metricKey, event) {
       showTooltip(`
         <div class="font-bold text-amber-300 text-sm mb-0.5">${st.state_ut}</div>
-        <div class="text-[11px] text-slate-300 mb-1.5">${st.region} • ${st.seats} Lok Sabha Seats</div>
-        <div class="bg-slate-800/90 px-2 py-1 rounded mb-1.5 border border-slate-700">
+        <div class="text-[11px] text-stone-300 mb-1.5">${st.region} • ${st.seats} Lok Sabha Seats</div>
+        <div class="bg-stone-800/90 px-2 py-1 rounded mb-1.5 border border-stone-700">
           ${meta.label}: <strong class="text-white">${st[metricKey].toFixed(2)}${meta.unit}</strong>
         </div>
         <div class="grid grid-cols-2 gap-x-3 gap-y-0.5 text-[11px]">
@@ -1640,9 +1656,12 @@
       document.getElementById('regional-chart-title').textContent = `Regional Alliance Seats & Turnout (${activeYear})`;
 
       const bounds = container.node().getBoundingClientRect();
-      const width = Math.max(300, bounds.width);
-      const height = 380;
-      const margin = { top: 22, right: 44, bottom: 52, left: 42 };
+      const width = Math.max(260, bounds.width);
+      const isMobile = width < 500;
+      const height = isMobile ? 280 : 350;
+      const margin = isMobile
+        ? { top: 18, right: 34, bottom: 44, left: 32 }
+        : { top: 22, right: 44, bottom: 52, left: 40 };
       const innerW = width - margin.left - margin.right;
       const innerH = height - margin.top - margin.bottom;
 
@@ -1656,7 +1675,7 @@
       const regions = regionalYear.map(d => d.region);
       const subgroups = ['nda_seats', 'india_seats', 'other_seats'];
       const subgroupLabels = { nda_seats: 'NDA', india_seats: 'INDIA / UPA', other_seats: 'Others' };
-      const subgroupColors = { nda_seats: '#ea580c', india_seats: '#2563eb', other_seats: '#0d9488' };
+      const subgroupColors = { nda_seats: '#c2410c', india_seats: '#1e40af', other_seats: '#0f766e' };
 
       const x0 = d3.scaleBand()
         .domain(regions)
@@ -1684,7 +1703,7 @@
       g.append('g')
         .attr('class', 'axis')
         .attr('transform', `translate(0,${innerH})`)
-        .call(d3.axisBottom(x0).tickFormat(d => d.replace(' India', '')));
+        .call(d3.axisBottom(x0).tickFormat(d => isMobile ? d.replace(' India', '').slice(0, 5) : d.replace(' India', '')));
 
       // Left Y Axis (Seats)
       g.append('g')
@@ -1724,7 +1743,7 @@
             <div>NDA Seats: <strong class="text-orange-300">${r.nda_seats}</strong></div>
             <div>INDIA/UPA Seats: <strong class="text-blue-300">${r.india_seats}</strong></div>
             <div>Others Seats: <strong class="text-teal-300">${r.other_seats}</strong></div>
-            <div class="mt-1 pt-1 border-t border-slate-700">Avg Turnout: <strong>${r.avg_turnout_pct.toFixed(2)}%</strong></div>
+            <div class="mt-1 pt-1 border-t border-stone-700">Avg Turnout: <strong>${r.avg_turnout_pct.toFixed(2)}%</strong></div>
           `, event);
         })
         .on('mousemove', moveTooltip)
@@ -1743,7 +1762,7 @@
       g.append('path')
         .datum(regionalYear)
         .attr('fill', 'none')
-        .attr('stroke', '#0f172a')
+        .attr('stroke', '#1c1917')
         .attr('stroke-width', 1.8)
         .attr('stroke-dasharray', '3,3')
         .attr('d', turnoutLine);
@@ -1752,12 +1771,12 @@
         .data(regionalYear)
         .enter()
         .append('rect')
-        .attr('x', d => x0(d.region) + x0.bandwidth() / 2 - 4.5)
-        .attr('y', d => yTurnout(d.avg_turnout_pct) - 4.5)
-        .attr('width', 9)
-        .attr('height', 9)
+        .attr('x', d => x0(d.region) + x0.bandwidth() / 2 - 4)
+        .attr('y', d => yTurnout(d.avg_turnout_pct) - 4)
+        .attr('width', 8)
+        .attr('height', 8)
         .attr('transform', d => `rotate(45, ${x0(d.region) + x0.bandwidth() / 2}, ${yTurnout(d.avg_turnout_pct)})`)
-        .attr('fill', '#0f172a')
+        .attr('fill', '#1c1917')
         .attr('stroke', '#ffffff')
         .attr('stroke-width', 1.5);
     }
@@ -1806,13 +1825,13 @@
 
       const grid = document.getElementById('insights-grid');
       grid.innerHTML = insights.map(item => `
-        <div class="rounded-lg border border-slate-200 bg-slate-50/70 p-3.5 flex flex-col justify-between">
+        <div class="rounded border border-stone-200 bg-white p-2.5 sm:p-3 flex flex-col justify-between">
           <div>
-            <div class="flex items-center justify-between gap-2 mb-1.5">
-              <h4 class="text-xs font-bold text-slate-900">${item.title}</h4>
-              <span class="px-2 py-0.5 rounded text-[10px] font-semibold border ${item.badgeClass} whitespace-nowrap">${item.badge}</span>
+            <div class="flex items-center justify-between gap-1.5 mb-1">
+              <h4 class="text-xs font-serif font-bold text-stone-900">${item.title}</h4>
+              <span class="px-1.5 py-0.5 rounded text-[9.5px] font-mono font-medium border ${item.badgeClass} whitespace-nowrap">${item.badge}</span>
             </div>
-            <p class="text-xs text-slate-600 leading-relaxed">${item.body}</p>
+            <p class="text-[11px] sm:text-xs text-stone-600 leading-relaxed font-sans">${item.body}</p>
           </div>
         </div>
       `).join('');
@@ -1886,18 +1905,18 @@
         const seatSum = d3.sum(filteredRows, r => r[seatCol] || 0);
         banner.innerHTML = `
           <div class="flex items-center gap-2">
-            <span class="font-semibold text-emerald-700">✓ Source Reconciliation Active:</span>
+            <span class="font-semibold text-stone-800">✓ Source Reconciliation Active:</span>
             <span>Displaying <strong>${filteredRows.length}</strong> verified records from <code>${state.activeTableTab}_*.csv</code></span>
           </div>
-          <div class="font-mono font-semibold text-slate-800">Sum of Seats in View: ${seatSum}</div>
+          <div class="font-mono font-semibold text-stone-900">Sum of Seats in View: ${seatSum}</div>
         `;
       } else {
         banner.innerHTML = `
           <div class="flex items-center gap-2">
-            <span class="font-semibold text-emerald-700">✓ Longitudinal Series Verified:</span>
-            <span>18 Lok Sabha General Elections (1951–52 to 2024) • Pre-1971 gender turnout properly preserved as <code>NA</code></span>
+            <span class="font-semibold text-stone-800">✓ Longitudinal Series Verified:</span>
+            <span>18 Lok Sabha General Elections (1951–52 to 2024) • Pre-1971 gender turnout preserved as <code>NA</code></span>
           </div>
-          <div class="font-mono font-semibold text-slate-800">Peak Turnout: 67.40% (2019)</div>
+          <div class="font-mono font-semibold text-stone-900">Peak Turnout: 67.40% (2019)</div>
         `;
       }
 
@@ -1907,7 +1926,7 @@
         <tr>
           ${columns.map(col => {
             const indicator = state.sortCol === col ? (state.sortAsc ? ' ▲' : ' ▼') : '';
-            return `<th data-col="${col}" class="px-3 py-2.5 text-left font-bold text-slate-700 uppercase tracking-wider cursor-pointer hover:bg-slate-100 select-none whitespace-nowrap">${col.replace(/_/g, ' ')}${indicator}</th>`;
+            return `<th data-col="${col}" class="px-2.5 py-2 text-left font-mono font-semibold text-stone-700 uppercase tracking-wider cursor-pointer hover:bg-stone-200 select-none whitespace-nowrap text-[11px]">${col.replace(/_/g, ' ')}${indicator}</th>`;
           }).join('')}
         </tr>
       `;
@@ -1928,13 +1947,13 @@
       // Render Body
       const tbody = document.getElementById('data-table-body');
       tbody.innerHTML = filteredRows.map(row => `
-        <tr class="hover:bg-blue-50/40 transition">
+        <tr class="hover:bg-amber-50/50 transition">
           ${columns.map(col => {
             let val = row[col];
-            if (val === null || val === undefined) val = '<span class="text-slate-400 italic">NA</span>';
+            if (val === null || val === undefined) val = '<span class="text-stone-400 italic">NA</span>';
             else if (col === 'electors' || col === 'votes') val = Number(val).toLocaleString('en-IN');
             else if (col.endsWith('_pct')) val = Number(val).toFixed(2) + '%';
-            return `<td class="px-3 py-2 whitespace-nowrap text-slate-800 ${col === 'state_ut' || col === 'party' || col === 'winner' ? 'font-semibold' : ''}">${val}</td>`;
+            return `<td class="px-2.5 py-1.5 whitespace-nowrap text-stone-800 text-[11px] sm:text-xs ${col === 'state_ut' || col === 'party' || col === 'winner' ? 'font-medium text-stone-900' : ''}">${val}</td>`;
           }).join('')}
         </tr>
       `).join('');
@@ -2011,15 +2030,15 @@
     // Party Chart Seats vs Vote Share Toggle
     document.getElementById('toggle-party-seats').addEventListener('click', () => {
       state.partyChartMode = 'seats';
-      document.getElementById('toggle-party-seats').className = 'px-2.5 py-1 rounded-md font-semibold bg-white text-slate-900 shadow-2xs cursor-pointer';
-      document.getElementById('toggle-party-votes').className = 'px-2.5 py-1 rounded-md font-medium text-slate-600 hover:text-slate-900 cursor-pointer';
+      document.getElementById('toggle-party-seats').className = 'px-2 py-0.5 rounded font-mono font-bold text-[11px] bg-stone-900 text-stone-50 shadow-xs cursor-pointer';
+      document.getElementById('toggle-party-votes').className = 'px-2 py-0.5 rounded font-mono font-medium text-[11px] text-stone-600 hover:text-stone-900 cursor-pointer';
       renderPartyChart(getFilteredData());
     });
 
     document.getElementById('toggle-party-votes').addEventListener('click', () => {
       state.partyChartMode = 'votes';
-      document.getElementById('toggle-party-votes').className = 'px-2.5 py-1 rounded-md font-semibold bg-white text-slate-900 shadow-2xs cursor-pointer';
-      document.getElementById('toggle-party-seats').className = 'px-2.5 py-1 rounded-md font-medium text-slate-600 hover:text-slate-900 cursor-pointer';
+      document.getElementById('toggle-party-votes').className = 'px-2 py-0.5 rounded font-mono font-bold text-[11px] bg-stone-900 text-stone-50 shadow-xs cursor-pointer';
+      document.getElementById('toggle-party-seats').className = 'px-2 py-0.5 rounded font-mono font-medium text-[11px] text-stone-600 hover:text-stone-900 cursor-pointer';
       renderPartyChart(getFilteredData());
     });
 
@@ -2030,8 +2049,8 @@
         state.sortCol = null;
         document.querySelectorAll('.table-tab-btn').forEach(b => {
           b.className = b === btn
-            ? 'table-tab-btn px-3 py-1.5 rounded-md text-xs font-semibold bg-white text-slate-900 shadow-2xs cursor-pointer'
-            : 'table-tab-btn px-3 py-1.5 rounded-md text-xs font-medium text-slate-600 hover:text-slate-900 cursor-pointer';
+            ? 'table-tab-btn px-2.5 py-1 rounded text-xs font-mono font-bold bg-stone-900 text-stone-100 shadow-xs cursor-pointer whitespace-nowrap'
+            : 'table-tab-btn px-2.5 py-1 rounded text-xs font-mono font-medium text-stone-600 hover:text-stone-900 hover:bg-stone-100 cursor-pointer whitespace-nowrap';
         });
         renderDataTable(getFilteredData());
       });
@@ -2068,8 +2087,8 @@
       btn.addEventListener('click', () => {
         document.querySelectorAll('.nav-btn').forEach(b => {
           b.className = b === btn
-            ? 'nav-btn px-3 py-1.5 text-xs font-semibold rounded-md bg-white text-civic-navy shadow-sm transition'
-            : 'nav-btn px-3 py-1.5 text-xs font-medium rounded-md text-slate-300 hover:text-white transition';
+            ? 'nav-btn px-2.5 py-1 text-xs font-medium rounded bg-stone-100 text-stone-900 shadow-xs transition'
+            : 'nav-btn px-2.5 py-1 text-xs font-medium rounded text-stone-300 hover:text-stone-100 hover:bg-stone-800 transition';
         });
         const targetId = `section-${btn.dataset.nav}`;
         const el = document.getElementById(targetId);
